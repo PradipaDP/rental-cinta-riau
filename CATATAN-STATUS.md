@@ -19,3 +19,14 @@ Struktur Folder: Sudah bersih dan sesuai rute Master Brief.
 Environment: Berhasil terhubung ke Supabase.
 
 Tahap Berikutnya: Tahap 4 (Manajemen Kendaraan dan Fitur Admin).
+
+
+Fitur Utama Selesai: Antarmuka Manajemen Pengguna khusus Super Admin dengan tabel dinamis (pencarian, filter role, dan paginasi).
+
+Keamanan & Server Actions: Integrasi klien service_role Supabase untuk mendaftarkan akun internal (tanpa repot konfirmasi email manual), dan memblokir akses login melalui ban_duration di lapisan Auth. Validasi server sukses mencegah Super Admin mendemosi atau memblokir dirinya sendiri.
+
+Perbaikan Skema: Penyelarasan Primary Key dari id menjadi id_user sukses diterapkan pada seluruh operasi CRUD untuk sinkronisasi sempurna antara auth.users dan public.users.
+
+File Dibuat/Diubah: src/lib/supabase/admin.ts, src/app/actions/super-admin.ts, src/app/super-admin/UserManagementClient.tsx, dan src/app/super-admin/page.tsx.
+
+Pengujian Checklist: Lulus 100% (Tambah akun, hapus tuntas, ubah role, dan notifikasi blokir login).
