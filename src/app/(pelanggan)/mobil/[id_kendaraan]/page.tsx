@@ -4,20 +4,17 @@ import { ambilDetailKendaraan } from '@/app/actions/publik-kendaraan';
 import { ambilPenggunaSaatIni } from '@/lib/auth';
 import { formatRupiah } from '@/lib/formatters';
 import { NAMA_PERUSAHAAN } from '@/lib/config';
-import Footer from '@/components/layout/Footer';
 import { 
   Image as ImageIcon, CheckCircle2, XCircle, ArrowLeft, 
-  Car, Users, Fuel, Gauge, Map, Calendar, Settings, ShieldCheck 
+  Car, Users, Fuel, Gauge, Calendar, Settings, ShieldCheck 
 } from 'lucide-react';
 
 // Fungsi penyamar Plat Nomor
 function samarkanPlat(plat: string) {
   const parts = plat.trim().split(' ');
-  // Jika format BM 1234 AB -> BM 1234 **
   if (parts.length === 3) {
     return `${parts[0]} ${parts[1]} **`;
   }
-  // Fallback sederhana jika format berbeda
   return plat.slice(0, -2) + '**';
 }
 
@@ -28,36 +25,32 @@ function formatRute(rute: string) {
   return rute;
 }
 
-// Mendefinisikan tipe untuk Props halaman dinamis Next.js
 type Props = {
   params: Promise<{ id_kendaraan: string }>;
 };
 
 export default async function DetailMobilPage({ params }: Props) {
-  // Await params untuk keamanan di Next.js 15+ 
   const resolvedParams = await params;
   const id_kendaraan = resolvedParams.id_kendaraan;
   
   const mobil = await ambilDetailKendaraan(id_kendaraan);
   if (!mobil) return notFound();
 
-  // Cek apakah user login untuk tombol Pesan
   const pengguna = await ambilPenggunaSaatIni();
   
-  // Rute tombol Pesan
   const rutePemesanan = pengguna 
     ? `/transaksi/${id_kendaraan}` 
     : `/login?next=/mobil/${id_kendaraan}`;
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-4rem)]">
+    <div className="flex flex-col min-h-[calc(100vh-4rem)] pb-12">
       <div className="mb-6">
         <Link href="/pencarian-pintar" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 transition">
           <ArrowLeft size={16} className="mr-1" /> Kembali ke Katalog
         </Link>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-12">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6">
         <div className="grid grid-cols-1 lg:grid-cols-2">
           {/* Sisi Kiri: Foto */}
           <div className="bg-gray-50 border-r border-gray-200 p-8 flex items-center justify-center min-h-[300px] lg:min-h-[500px]">
@@ -135,7 +128,7 @@ export default async function DetailMobilPage({ params }: Props) {
               </div>
             </div>
 
-            {/* Fitur Tambahan (Variabel 8) */}
+            {/* Fitur Tambahan */}
             <h3 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wider flex items-center">
               <Settings size={16} className="mr-2" /> Fitur Tambahan
             </h3>
@@ -179,10 +172,7 @@ export default async function DetailMobilPage({ params }: Props) {
           </div>
         </div>
       </div>
-
-      <div className="-mx-4 md:-mx-6 lg:-mx-8">
-        <Footer />
-      </div>
+      {/* Catatan: Footer dibungkus oleh layout pelanggan, jadi tidak perlu dipanggil manual di sini */}
     </div>
   );
 }
