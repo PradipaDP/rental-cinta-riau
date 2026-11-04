@@ -1,0 +1,2770 @@
+# SNAPSHOT PROYEK rental-cinta-riau (2026-11-04 14:31)
+
+## Struktur folder src
+```
+Folder PATH listing for volume New Volume
+Volume serial number is 68C0-8CB7
+D:\SKRIPSI\RENTAL-CINTA-RIAU\RENTAL-CINTA-RIAU\SRC
+|   middleware.ts
+|   
++---app
+|   |   favicon.ico
+|   |   globals.css
+|   |   layout.tsx
+|   |   page.tsx
+|   |   
+|   +---(pelanggan)
+|   |   |   layout.tsx
+|   |   |   
+|   |   +---mobil
+|   |   |   \---[id_kendaraan]
+|   |   |           page.tsx
+|   |   |           
+|   |   \---pencarian-pintar
+|   |           page.tsx
+|   |           
+|   +---(publik)
+|   |   +---login
+|   |   |       page.tsx
+|   |   |       
+|   |   \---register
+|   |           page.tsx
+|   |           
+|   +---actions
+|   |       admin-kendaraan.ts
+|   |       auth.ts
+|   |       publik-kendaraan.ts
+|   |       super-admin.ts
+|   |       
+|   +---admin
+|   |   |   layout.tsx
+|   |   |   page.tsx
+|   |   |   
+|   |   \---kendaraan
+|   |           KendaraanClient.tsx
+|   |           page.tsx
+|   |           
+|   +---akses-ditolak
+|   |       page.tsx
+|   |       
+|   +---api
+|   +---staf
+|   |       layout.tsx
+|   |       page.tsx
+|   |       
+|   \---super-admin
+|           layout.tsx
+|           page.tsx
+|           UserManagementClient.tsx
+|           
++---components
+|   +---charts
+|   +---kendaraan
+|   |       CarCard.tsx
+|   |       
+|   +---layout
+|   |       DashboardLayout.tsx
+|   |       Footer.tsx
+|   |       
+|   \---ui
++---lib
+|   |   auth.ts
+|   |   config.ts
+|   |   formatters.ts
+|   |   validations.ts
+|   |   
+|   +---cbf
+|   +---export
+|   +---midtrans
+|   \---supabase
+|           admin.ts
+|           client.ts
+|           server.ts
+|           
+\---types
+        index.ts
+        
+```
+
+### FILE: next.config.ts
+```ts
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  /* config options here */
+  turbopack: {
+    rules: {
+      "*.css": {
+        loaders: ["@tailwindcss/turbopack"],
+        as: "*.css",
+      },
+    },
+  },
+};
+
+export default nextConfig;
+```
+
+### FILE: package.json
+```json
+{
+  "name": "rental-cinta-riau",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.118.0",
+    "date-fns": "^4.4.0",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.9",
+    "lucide-react": "^1.67.0",
+    "midtrans-client": "^1.4.3",
+    "next": "16.4.4",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "recharts": "^3.10.1",
+    "xlsx": "^0.18.5",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/turbopack": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.4",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
+```
+
+### FILE: src\app\(pelanggan)\layout.tsx
+```tsx
+import { ambilKendaraanTersedia } from '@/app/actions/publik-kendaraan';
+import CarCard from '@/components/kendaraan/CarCard';
+import { Sparkles, Car } from 'lucide-react';
+import Footer from '@/components/layout/Footer';
+
+// Revalidate data per 30 detik untuk halaman Katalog
+export const revalidate = 30;
+
+export default async function PencarianPintarPage() {
+  const semuaMobil = await ambilKendaraanTersedia();
+
+  return (
+    <div className="flex flex-col min-h-[calc(100vh-4rem)]">
+      
+      {/* 1. KOTAK PLACEHOLDER CBF (Untuk Tahap 7) */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl shadow-lg p-6 md:p-10 mb-10 text-white relative overflow-hidden">
+        <div className="relative z-10 max-w-3xl">
+          <div className="flex items-center space-x-2 mb-3">
+            <Sparkles className="text-yellow-300" size={24} />
+            <h1 className="text-2xl md:text-3xl font-bold">Pencarian Pintar Rekomendasi</h1>
+          </div>
+          <p className="text-blue-100 mb-6">
+            Sistem kami akan mencarikan mobil yang paling cocok untuk Anda berdasarkan 8 variabel preferensi menggunakan algoritma Content-Based Filtering.
+          </p>
+          
+          <div className="bg-white/10 border border-white/20 backdrop-blur-sm rounded-xl p-6 text-center border-dashed">
+            <p className="text-sm font-medium uppercase tracking-wider text-blue-200">
+              [ KOMPONEN FORM CBF AKAN DIISI DI TAHAP 7 ]
+            </p>
+          </div>
+        </div>
+        {/* Dekorasi */}
+        <Car size={200} className="absolute -bottom-10 -right-10 text-white opacity-10" />
+      </div>
+
+      {/* 2. DAFTAR SEMUA KATALOG KENDARAAN */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">Katalog Semua Kendaraan</h2>
+        <p className="text-gray-500 mt-1">Daftar armada yang tersedia saat ini untuk disewa.</p>
+      </div>
+
+      <div className="flex-1 mb-16">
+        {semuaMobil.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center shadow-sm">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Car className="text-gray-400" size={32} />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">Tidak ada armada</h3>
+            <p className="text-gray-500 text-sm">Mohon maaf, saat ini tidak ada kendaraan yang tersedia.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {semuaMobil.map(mobil => (
+              <CarCard key={mobil.id_kendaraan} mobil={mobil} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="-mx-4 md:-mx-6 lg:-mx-8">
+        <Footer />
+      </div>
+    </div>
+  );
+}
+```
+
+### FILE: src\app\(pelanggan)\mobil\[id_kendaraan]\page.tsx
+```tsx
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { ambilDetailKendaraan } from '@/app/actions/publik-kendaraan';
+import { ambilPenggunaSaatIni } from '@/lib/auth';
+import { formatRupiah } from '@/lib/formatters';
+import { NAMA_PERUSAHAAN } from '@/lib/config';
+import Footer from '@/components/layout/Footer';
+import { 
+  Image as ImageIcon, CheckCircle2, XCircle, ArrowLeft, 
+  Car, Users, Fuel, Gauge, Map, Calendar, Settings, ShieldCheck 
+} from 'lucide-react';
+
+// Fungsi penyamar Plat Nomor
+function samarkanPlat(plat: string) {
+  const parts = plat.trim().split(' ');
+  // Jika format BM 1234 AB -> BM 1234 **
+  if (parts.length === 3) {
+    return `${parts[0]} ${parts[1]} **`;
+  }
+  // Fallback sederhana jika format berbeda
+  return plat.slice(0, -2) + '**';
+}
+
+function formatRute(rute: string) {
+  if (rute === 'dalam_kota') return 'Dalam Kota';
+  if (rute === 'luar_kota') return 'Luar Kota';
+  if (rute === 'keduanya') return 'Dalam & Luar Kota';
+  return rute;
+}
+
+// Mendefinisikan tipe untuk Props halaman dinamis Next.js
+type Props = {
+  params: Promise<{ id_kendaraan: string }>;
+};
+
+export default async function DetailMobilPage({ params }: Props) {
+  // Await params untuk keamanan di Next.js 15+ 
+  const resolvedParams = await params;
+  const id_kendaraan = resolvedParams.id_kendaraan;
+  
+  const mobil = await ambilDetailKendaraan(id_kendaraan);
+  if (!mobil) return notFound();
+
+  // Cek apakah user login untuk tombol Pesan
+  const pengguna = await ambilPenggunaSaatIni();
+  
+  // Rute tombol Pesan
+  const rutePemesanan = pengguna 
+    ? `/transaksi/${id_kendaraan}` 
+    : `/login?next=/mobil/${id_kendaraan}`;
+
+  return (
+    <div className="flex flex-col min-h-[calc(100vh-4rem)]">
+      <div className="mb-6">
+        <Link href="/pencarian-pintar" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 transition">
+          <ArrowLeft size={16} className="mr-1" /> Kembali ke Katalog
+        </Link>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2">
+          {/* Sisi Kiri: Foto */}
+          <div className="bg-gray-50 border-r border-gray-200 p-8 flex items-center justify-center min-h-[300px] lg:min-h-[500px]">
+            {mobil.foto_url ? (
+              <img 
+                src={mobil.foto_url} 
+                alt={mobil.nama_kendaraan} 
+                className="w-full max-w-md h-auto object-contain drop-shadow-xl"
+              />
+            ) : (
+              <div className="text-center text-gray-400">
+                <ImageIcon size={80} className="mx-auto mb-4 opacity-50" />
+                <p>Foto tidak tersedia</p>
+              </div>
+            )}
+          </div>
+
+          {/* Sisi Kanan: Spesifikasi */}
+          <div className="p-8 lg:p-10 flex flex-col">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <div className="inline-flex items-center space-x-2 mb-3">
+                  <span className="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                    {mobil.jenis_kendaraan}
+                  </span>
+                  <span className="bg-gray-100 text-gray-600 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center">
+                    <ShieldCheck size={14} className="mr-1" /> {samarkanPlat(mobil.plat_nomor)}
+                  </span>
+                </div>
+                <h1 className="text-3xl font-extrabold text-gray-900">{mobil.nama_kendaraan}</h1>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-gray-500 mb-1">Harga Sewa</div>
+                <div className="text-2xl font-bold text-blue-600">{formatRupiah(mobil.harga_sewa)}</div>
+                <div className="text-xs text-gray-400">/ hari</div>
+              </div>
+            </div>
+
+            <p className="text-gray-600 text-sm mb-8 leading-relaxed">
+              Disewakan kendaraan {mobil.nama_kendaraan} kategori {mobil.jenis_kendaraan} tahun {mobil.tahun_kendaraan} 
+              dengan kondisi prima dan terawat oleh {NAMA_PERUSAHAAN}. Cocok untuk penggunaan {formatRute(mobil.rute_peruntukan)}.
+            </p>
+
+            {/* 8 Variabel CBF Grid */}
+            <h3 className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-wider">Spesifikasi Kendaraan</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8 flex-1">
+              <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <Car className="text-gray-400 mb-2" size={20} />
+                <div className="text-xs text-gray-500 mb-0.5">Kategori</div>
+                <div className="font-semibold text-gray-900 text-sm">{mobil.jenis_kendaraan}</div>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <Users className="text-gray-400 mb-2" size={20} />
+                <div className="text-xs text-gray-500 mb-0.5">Kapasitas</div>
+                <div className="font-semibold text-gray-900 text-sm">{mobil.kapasitas} Kursi</div>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <Fuel className="text-gray-400 mb-2" size={20} />
+                <div className="text-xs text-gray-500 mb-0.5">Bahan Bakar</div>
+                <div className="font-semibold text-gray-900 text-sm">{mobil.bahan_bakar}</div>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <Gauge className="text-gray-400 mb-2" size={20} />
+                <div className="text-xs text-gray-500 mb-0.5">Transmisi</div>
+                <div className="font-semibold text-gray-900 text-sm">{mobil.transmisi}</div>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <div className="text-xs text-gray-500 mb-0.5">Rute Izin</div>
+                <div className="font-semibold text-gray-900 text-sm">{formatRute(mobil.rute_peruntukan)}</div>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <Calendar className="text-gray-400 mb-2" size={20} />
+                <div className="text-xs text-gray-500 mb-0.5">Tahun</div>
+                <div className="font-semibold text-gray-900 text-sm">{mobil.tahun_kendaraan}</div>
+              </div>
+            </div>
+
+            {/* Fitur Tambahan (Variabel 8) */}
+            <h3 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wider flex items-center">
+              <Settings size={16} className="mr-2" /> Fitur Tambahan
+            </h3>
+            <div className="flex flex-wrap gap-2 mb-8">
+              {mobil.fitur_tambahan && mobil.fitur_tambahan.length > 0 ? (
+                mobil.fitur_tambahan.map((fitur, i) => (
+                  <span key={i} className="bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1.5 rounded-lg text-xs font-medium">
+                    {fitur}
+                  </span>
+                ))
+              ) : (
+                <span className="text-gray-400 text-sm italic">Tidak ada catatan fitur tambahan.</span>
+              )}
+            </div>
+
+            {/* Call to Action */}
+            <div className="mt-auto pt-6 border-t border-gray-100">
+              {mobil.status === 'tersedia' ? (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center text-green-600 text-sm font-medium bg-green-50 px-4 py-2 rounded-lg">
+                    <CheckCircle2 size={18} className="mr-2" /> Kendaraan Tersedia
+                  </div>
+                  <Link 
+                    href={rutePemesanan}
+                    className="w-full sm:w-auto text-center px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-200 transition"
+                  >
+                    Pesan Sekarang
+                  </Link>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center text-red-600 text-sm font-medium bg-red-50 px-4 py-2 rounded-lg">
+                    <XCircle size={18} className="mr-2" /> Sedang Disewa
+                  </div>
+                  <button disabled className="w-full sm:w-auto px-8 py-3.5 bg-gray-300 text-gray-500 font-bold rounded-xl cursor-not-allowed">
+                    Pesan Sekarang
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="-mx-4 md:-mx-6 lg:-mx-8">
+        <Footer />
+      </div>
+    </div>
+  );
+}
+```
+
+### FILE: src\app\(pelanggan)\pencarian-pintar\page.tsx
+```tsx
+export default function PencarianPintarPage() {
+  return (
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">Pencarian Pintar (Rekomendasi CBF)</h1>
+      <p className="text-gray-500">Form input 8 variabel preferensi kendaraan akan berada di sini.</p>
+    </div>
+  );
+}
+```
+
+### FILE: src\app\(publik)\login\page.tsx
+```tsx
+'use client';
+
+import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { Eye, EyeOff } from 'lucide-react';
+import { loginAction } from '@/app/actions/auth';
+import { NAMA_PERUSAHAAN } from '@/lib/config';
+
+export default function LoginPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextUrl = searchParams.get('next'); // Menangkap parameter rute asal jika ada
+
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const formData = new FormData(e.currentTarget);
+    const respon = await loginAction(null, formData);
+
+    if (respon?.error) {
+      setError(respon.error);
+      setLoading(false);
+    } else if (respon?.success && respon.redirectPath) {
+      // Jika ada parameter 'next' di URL (misal diarahkan dari middleware), prioritaskan itu
+      // Asalkan rolenya sesuai, atau biarkan router mengarahkannya
+      if (nextUrl) {
+        router.push(nextUrl);
+      } else {
+        router.push(respon.redirectPath);
+      }
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">Selamat Datang</h1>
+          <p className="text-gray-500 text-sm mt-2">Masuk ke sistem {NAMA_PERUSAHAAN}</p>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 text-red-500 p-3 rounded-lg text-sm mb-6 border border-red-200">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input 
+              name="email" 
+              type="email" 
+              required 
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+              placeholder="nama@email.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <div className="relative">
+              <input 
+                name="password" 
+                type={showPassword ? "text" : "password"} 
+                required 
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                placeholder="••••••••"
+              />
+              <button 
+                type="button" 
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition disabled:bg-blue-400"
+          >
+            {loading ? 'Memproses...' : 'Masuk'}
+          </button>
+        </form>
+
+        <p className="text-center text-sm text-gray-600 mt-6">
+          Belum punya akun? <Link href="/register" className="text-blue-600 hover:underline font-medium">Daftar sekarang</Link>
+        </p>
+      </div>
+    </div>
+  );
+}
+```
+
+### FILE: src\app\(publik)\register\page.tsx
+```tsx
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Eye, EyeOff } from 'lucide-react';
+import { registerAction } from '@/app/actions/auth';
+import { NAMA_PERUSAHAAN } from '@/lib/config';
+
+export default function RegisterPage() {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const formData = new FormData(e.currentTarget);
+    const respon = await registerAction(null, formData);
+
+    if (respon?.error) {
+      setError(respon.error);
+      setLoading(false);
+    } else if (respon?.success && respon.redirectPath) {
+      router.push(respon.redirectPath);
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 my-8">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">Daftar Akun</h1>
+          <p className="text-gray-500 text-sm mt-2">Bergabung dengan {NAMA_PERUSAHAAN}</p>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 text-red-500 p-3 rounded-lg text-sm mb-6 border border-red-200">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+            <input name="nama" type="text" required className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input name="email" type="email" required className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nomor HP</label>
+            <input name="no_hp" type="tel" required className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Alamat Lengkap</label>
+            <textarea name="alamat" required rows={3} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <div className="relative">
+              <input name="password" type={showPassword ? "text" : "password"} required className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2.5 text-gray-400">
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Konfirmasi Password</label>
+            <input name="konfirmasiPassword" type={showPassword ? "text" : "password"} required className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+          </div>
+
+          <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition disabled:bg-blue-400 mt-2">
+            {loading ? 'Memproses...' : 'Daftar Sekarang'}
+          </button>
+        </form>
+
+        <p className="text-center text-sm text-gray-600 mt-6">
+          Sudah punya akun? <Link href="/login" className="text-blue-600 hover:underline font-medium">Masuk di sini</Link>
+        </p>
+      </div>
+    </div>
+  );
+}
+```
+
+### FILE: src\app\actions\admin-kendaraan.ts
+```ts
+'use server';
+
+import { createClient } from '@/lib/supabase/server';
+import { wajibRole } from '@/lib/auth';
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
+
+const KendaraanSchema = z.object({
+  nama_kendaraan: z.string().min(1, "Nama kendaraan wajib diisi."),
+  jenis_kendaraan: z.string().min(1, "Jenis kendaraan wajib diisi."),
+  plat_nomor: z.string().min(1, "Plat nomor wajib diisi."),
+  kapasitas: z.coerce.number().positive("Kapasitas harus lebih dari 0."),
+  bahan_bakar: z.string().min(1, "Bahan bakar wajib diisi."),
+  transmisi: z.string().min(1, "Transmisi wajib diisi."),
+  rute_peruntukan: z.string().min(1, "Rute peruntukan wajib diisi."),
+  tahun_kendaraan: z.coerce.number()
+    .min(1990, "Tahun kendaraan minimal 1990.")
+    .max(new Date().getFullYear() + 1, "Tahun kendaraan tidak masuk akal."),
+  harga_sewa: z.coerce.number().positive("Harga sewa harus lebih dari 0."),
+  fitur_tambahan: z.string().optional(),
+  status: z.string(),
+});
+
+export async function ambilDaftarKendaraan() {
+  await wajibRole(['admin', 'super_admin']);
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('kendaraan')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error('Gagal mengambil data kendaraan: ' + error.message);
+  return data;
+}
+
+export async function tambahKendaraan(formData: FormData) {
+  await wajibRole(['admin', 'super_admin']);
+  const supabase = await createClient();
+  
+  const parsed = KendaraanSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  const data = parsed.data;
+
+  // Ubah string fitur tambahan menjadi Array agar sesuai dengan tipe data kolom Supabase
+  const fiturArray = data.fitur_tambahan 
+    ? data.fitur_tambahan.split(',').map(f => f.trim()).filter(Boolean) 
+    : [];
+
+  // Upload Foto
+  const fotoFile = formData.get('foto') as File | null;
+  let foto_url = '';
+  
+  if (fotoFile && fotoFile.size > 0) {
+    if (fotoFile.size > 2 * 1024 * 1024) return { error: "Ukuran foto maksimal 2 MB." };
+    const fileExt = fotoFile.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const { error: uploadErr } = await supabase.storage
+      .from('foto-kendaraan')
+      .upload(fileName, fotoFile);
+      
+    if (uploadErr) return { error: 'Gagal mengunggah foto: ' + uploadErr.message };
+    const { data: publicUrlData } = supabase.storage.from('foto-kendaraan').getPublicUrl(fileName);
+    foto_url = publicUrlData.publicUrl;
+  }
+
+  const { error: dbErr } = await supabase.from('kendaraan').insert({
+    ...data,
+    fitur_tambahan: fiturArray,
+    foto_url,
+  });
+
+  if (dbErr) {
+    if (dbErr.code === '23505') return { error: "Plat nomor sudah terdaftar." };
+    return { error: dbErr.message };
+  }
+
+  revalidatePath('/admin/kendaraan');
+  return { success: true };
+}
+
+export async function ubahKendaraan(id_kendaraan: string, formData: FormData, oldFotoUrl: string) {
+  await wajibRole(['admin', 'super_admin']);
+  const supabase = await createClient();
+  
+  const parsed = KendaraanSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  const data = parsed.data;
+
+  const fiturArray = data.fitur_tambahan 
+    ? data.fitur_tambahan.split(',').map(f => f.trim()).filter(Boolean) 
+    : [];
+
+  let foto_url = oldFotoUrl;
+  const fotoFile = formData.get('foto') as File | null;
+
+  if (fotoFile && fotoFile.size > 0) {
+    if (fotoFile.size > 2 * 1024 * 1024) return { error: "Ukuran foto maksimal 2 MB." };
+    
+    if (oldFotoUrl) {
+      const oldFileName = oldFotoUrl.split('/').pop();
+      if (oldFileName) await supabase.storage.from('foto-kendaraan').remove([oldFileName]);
+    }
+
+    const fileExt = fotoFile.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const { error: uploadErr } = await supabase.storage.from('foto-kendaraan').upload(fileName, fotoFile);
+    if (uploadErr) return { error: 'Gagal mengunggah foto: ' + uploadErr.message };
+    
+    const { data: publicUrlData } = supabase.storage.from('foto-kendaraan').getPublicUrl(fileName);
+    foto_url = publicUrlData.publicUrl;
+  }
+
+  const { error: dbErr } = await supabase.from('kendaraan').update({
+    ...data,
+    fitur_tambahan: fiturArray,
+    foto_url,
+  }).eq('id_kendaraan', id_kendaraan);
+
+  if (dbErr) {
+    if (dbErr.code === '23505') return { error: "Plat nomor sudah terdaftar." };
+    return { error: dbErr.message };
+  }
+
+  revalidatePath('/admin/kendaraan');
+  return { success: true };
+}
+
+export async function ubahStatusKendaraan(id_kendaraan: string, newStatus: string) {
+  await wajibRole(['admin', 'super_admin']);
+  const supabase = await createClient();
+  const { error } = await supabase.from('kendaraan').update({ status: newStatus }).eq('id_kendaraan', id_kendaraan);
+  if (error) return { error: error.message };
+  revalidatePath('/admin/kendaraan');
+  return { success: true };
+}
+
+export async function hapusKendaraan(id_kendaraan: string, fotoUrl: string) {
+  await wajibRole(['admin', 'super_admin']);
+  const supabase = await createClient();
+  
+  const { error: dbErr } = await supabase.from('kendaraan').delete().eq('id_kendaraan', id_kendaraan);
+  
+  if (dbErr) {
+    if (dbErr.code === '23503') return { error: "Kendaraan tidak bisa dihapus karena memiliki riwayat transaksi/pemesanan aktif." };
+    return { error: dbErr.message };
+  }
+
+  if (fotoUrl) {
+    const fileName = fotoUrl.split('/').pop();
+    if (fileName) await supabase.storage.from('foto-kendaraan').remove([fileName]);
+  }
+
+  revalidatePath('/admin/kendaraan');
+  return { success: true };
+}
+```
+
+### FILE: src\app\actions\auth.ts
+```ts
+'use server';
+
+import { createClient } from '../../lib/supabase/server';
+import { redirect } from 'next/navigation';
+import { loginSchema, registerSchema } from '../../lib/validations';
+
+export async function loginAction(prevState: any, formData: FormData) {
+  const email = formData.get('email') as string;
+  const password = formData.get('password') as string;
+
+  const validasi = loginSchema.safeParse({ email, password });
+  if (!validasi.success) {
+    return { error: validasi.error.issues[0].message };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    let pesanError = error.message;
+    if (pesanError.includes('Invalid login credentials')) {
+      pesanError = 'Email atau password salah.';
+    } else if (pesanError.toLowerCase().includes('banned')) {
+      pesanError = 'Akses Ditolak: Akun Anda telah dinonaktifkan oleh Super Admin.';
+    }
+    return { error: pesanError };
+  }
+
+  const { data: userData } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id_user', data.user.id)
+    .single();
+
+  const role = userData?.role || 'pelanggan';
+
+  let redirectPath = '/pencarian-pintar';
+  if (role === 'super_admin') redirectPath = '/super-admin';
+  else if (role === 'admin') redirectPath = '/admin';
+  else if (role === 'staf') redirectPath = '/staf';
+
+  return { success: true, redirectPath };
+}
+
+export async function registerAction(prevState: any, formData: FormData) {
+  const dataForm = Object.fromEntries(formData.entries());
+
+  const validasi = registerSchema.safeParse(dataForm);
+  if (!validasi.success) {
+    return { error: validasi.error.issues[0].message };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signUp({
+    email: validasi.data.email,
+    password: validasi.data.password,
+    options: {
+      data: {
+        nama: validasi.data.nama,
+        no_hp: validasi.data.no_hp,
+        alamat: validasi.data.alamat,
+      },
+    },
+  });
+
+  if (error) {
+    let pesanError = error.message;
+    if (pesanError.includes('already registered')) {
+      pesanError = 'Email sudah terdaftar.';
+    }
+    return { error: pesanError };
+  }
+
+  if (data.user) {
+    await supabase.from('users').insert({
+      id_user: data.user.id,
+      nama: validasi.data.nama,
+      email: validasi.data.email,
+      role: 'pelanggan',
+      no_hp: validasi.data.no_hp,
+      alamat: validasi.data.alamat,
+    });
+  }
+
+  return { success: true, redirectPath: '/pencarian-pintar' };
+}
+
+export async function logoutAction() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect('/login');
+}
+```
+
+### FILE: src\app\actions\publik-kendaraan.ts
+```ts
+'use server';
+
+import { createClient } from '@/lib/supabase/server';
+import { Kendaraan } from '@/types';
+
+// Mengambil kendaraan yang hanya berstatus 'tersedia'
+export async function ambilKendaraanTersedia(limit?: number): Promise<Kendaraan[]> {
+  const supabase = await createClient();
+  let query = supabase
+    .from('kendaraan')
+    .select('*')
+    .eq('status', 'tersedia')
+    .order('created_at', { ascending: false });
+
+  if (limit) {
+    query = query.limit(limit);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error('Gagal mengambil data kendaraan: ' + error.message);
+  
+  return data as Kendaraan[];
+}
+
+// Mengambil detail satu kendaraan berdasarkan ID
+export async function ambilDetailKendaraan(id_kendaraan: string): Promise<Kendaraan | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('kendaraan')
+    .select('*')
+    .eq('id_kendaraan', id_kendaraan)
+    .single();
+
+  if (error) return null;
+  return data as Kendaraan;
+}
+```
+
+### FILE: src\app\actions\super-admin.ts
+```ts
+'use server';
+
+import { createAdminClient } from '@/lib/supabase/admin';
+import { wajibRole } from '@/lib/auth';
+import { revalidatePath } from 'next/cache';
+
+export async function ambilDaftarPengguna() {
+  await wajibRole(['super_admin']);
+  const supabaseAdmin = createAdminClient();
+
+  const { data: publicUsers, error: dbErr } = await supabaseAdmin
+    .from('users')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.listUsers();
+
+  if (dbErr || authErr) throw new Error('Gagal mengambil data pengguna');
+
+  const authUsers = authData.users;
+  return publicUsers.map((pu) => {
+    // Cocokkan id dari auth dengan id_user dari tabel public.users
+    const au = authUsers.find((a) => a.id === pu.id_user);
+    const isBanned = au?.banned_until ? new Date(au.banned_until) > new Date() : false;
+    return { ...pu, isBanned };
+  });
+}
+
+export async function tambahPenggunaAdmin(formData: FormData) {
+  await wajibRole(['super_admin']);
+  const email = formData.get('email') as string;
+  const password = formData.get('password') as string;
+  const nama = formData.get('nama') as string;
+  const no_hp = formData.get('no_hp') as string;
+  const alamat = formData.get('alamat') as string;
+  const role = formData.get('role') as string;
+
+  if (role === 'super_admin') {
+    return { error: 'Keamanan: Tidak diizinkan membuat Super Admin baru dari form ini.' };
+  }
+
+  const supabaseAdmin = createAdminClient();
+  const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+
+  if (authErr) return { error: authErr.message };
+
+  // Gunakan id_user sesuai nama kolom di database
+  const { error: dbErr } = await supabaseAdmin.from('users').upsert({
+    id_user: authData.user.id,
+    email,
+    nama,
+    role,
+    no_hp,
+    alamat,
+  });
+
+  if (dbErr) return { error: dbErr.message };
+  revalidatePath('/super-admin');
+  return { success: true };
+}
+
+export async function ubahRolePengguna(id_user: string, newRole: string) {
+  const adminSaatIni = (await wajibRole(['super_admin'])) as any;
+  
+  // Cek validasi menggunakan id_user
+  if (id_user === adminSaatIni.id_user) {
+    return { error: 'Keamanan: Anda tidak bisa mengubah role Anda sendiri.' };
+  }
+  if (newRole === 'super_admin') {
+    return { error: 'Keamanan: Tidak dapat mengangkat akun menjadi Super Admin.' };
+  }
+
+  const supabaseAdmin = createAdminClient();
+  const { error } = await supabaseAdmin.from('users').update({ role: newRole }).eq('id_user', id_user);
+  
+  if (error) return { error: error.message };
+  revalidatePath('/super-admin');
+  return { success: true };
+}
+
+export async function toggleStatusPengguna(id_user: string, isCurrentlyBanned: boolean) {
+  const adminSaatIni = (await wajibRole(['super_admin'])) as any;
+  
+  // Cek validasi menggunakan id_user
+  if (id_user === adminSaatIni.id_user) {
+    return { error: 'Keamanan: Anda tidak bisa menonaktifkan akun Anda sendiri.' };
+  }
+
+  const supabaseAdmin = createAdminClient();
+  // Di Supabase Auth, UUID selalu menggunakan 'id'
+  const { error } = await supabaseAdmin.auth.admin.updateUserById(id_user, {
+    ban_duration: isCurrentlyBanned ? 'none' : '876600h',
+  });
+
+  if (error) return { error: error.message };
+  revalidatePath('/super-admin');
+  return { success: true };
+}
+```
+
+### FILE: src\app\admin\kendaraan\KendaraanClient.tsx
+```tsx
+'use client';
+
+import { useState, useMemo } from 'react';
+import { Search, Plus, Edit, Trash2, Image as ImageIcon, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { tambahKendaraan, ubahKendaraan, hapusKendaraan, ubahStatusKendaraan } from '@/app/actions/admin-kendaraan';
+
+type Kendaraan = {
+  id_kendaraan: string;
+  foto_url: string;
+  nama_kendaraan: string;
+  jenis_kendaraan: string;
+  plat_nomor: string;
+  kapasitas: number;
+  bahan_bakar: string;
+  transmisi: string;
+  rute_peruntukan: string;
+  tahun_kendaraan: number;
+  harga_sewa: number;
+  fitur_tambahan: any;
+  status: string;
+};
+
+// Opsi Kategori / Jenis Kendaraan
+const KATEGORI_OPTIONS = ["Sedan", "SUV", "MPV", "Minibus", "Hatchback", "City Car", "Off-Road"];
+
+// Opsi Transmisi (Sinkron dengan database: Manual & Matic)
+const TRANSMISI_OPTIONS = ["Manual", "Matic"];
+
+// Opsi Bahan Bakar (Sinkron dengan database: Bensin, Diesel, Hybrid, Listrik)
+const BAHAN_BAKAR_OPTIONS = ["Bensin", "Diesel", "Hybrid"];
+
+// Opsi Rute Peruntukan (Sinkron dengan database: Dalam Kota, Luar Kota, Keduanya)
+const RUTE_OPTIONS = ["Dalam Kota", "Luar Kota", "Keduanya"];
+
+// Opsi Fitur Tambahan Lengkap
+const FITUR_OPTIONS = [
+  "AC", 
+  "Multimedia", 
+  "Bluetooth", 
+  "Kamera Mundur", 
+  "Sensor Parkir", 
+  "Apple CarPlay", 
+  "Android Auto", 
+  "Kursi Kulit", 
+  "Double Blower", 
+  "Sunroof", 
+  "Cruise Control"
+];
+
+export default function KendaraanClient({ initialData }: { initialData: Kendaraan[] }) {
+  const [kendaraanList, setKendaraanList] = useState<Kendaraan[]>(initialData);
+  const [search, setSearch] = useState('');
+  const [filterJenis, setFilterJenis] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [page, setPage] = useState(1);
+  const perPage = 8;
+
+  const [notif, setNotif] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [modal, setModal] = useState<{ isOpen: boolean; type: 'tambah' | 'ubah' | 'hapus' | null; data: Kendaraan | null }>({ 
+    isOpen: false, 
+    type: null, 
+    data: null 
+  });
+  
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const [selectedFitur, setSelectedFitur] = useState<string[]>([]);
+  const [customFitur, setCustomFitur] = useState('');
+
+  const filteredData = useMemo(() => {
+    return kendaraanList.filter(k => {
+      const matchSearch = k.nama_kendaraan.toLowerCase().includes(search.toLowerCase()) || k.plat_nomor.toLowerCase().includes(search.toLowerCase());
+      const matchJenis = filterJenis ? k.jenis_kendaraan === filterJenis : true;
+      const matchStatus = filterStatus ? k.status === filterStatus : true;
+      return matchSearch && matchJenis && matchStatus;
+    });
+  }, [kendaraanList, search, filterJenis, filterStatus]);
+
+  const paginatedData = filteredData.slice((page - 1) * perPage, page * perPage);
+  const totalPages = Math.ceil(filteredData.length / perPage);
+
+  const showNotif = (type: 'success' | 'error', msg: string) => {
+    setNotif({ type, msg });
+    setTimeout(() => setNotif(null), 5000);
+  };
+
+  const resetForm = () => {
+    setModal({ isOpen: false, type: null, data: null });
+    setFotoPreview(null);
+    setSelectedFitur([]);
+    setCustomFitur('');
+  };
+
+  const openTambah = () => {
+    setFotoPreview(null);
+    setSelectedFitur([]);
+    setCustomFitur('');
+    setModal({ isOpen: true, type: 'tambah', data: null });
+  };
+
+  const openUbah = (k: Kendaraan) => {
+    setFotoPreview(k.foto_url);
+    const fiturArr = Array.isArray(k.fitur_tambahan) 
+      ? k.fitur_tambahan 
+      : (k.fitur_tambahan ? String(k.fitur_tambahan).split(', ') : []);
+    const knownFitur = fiturArr.filter((f: string) => FITUR_OPTIONS.includes(f));
+    const unknownFitur = fiturArr.filter((f: string) => !FITUR_OPTIONS.includes(f)).join(', ');
+    setSelectedFitur(knownFitur);
+    setCustomFitur(unknownFitur);
+    setModal({ isOpen: true, type: 'ubah', data: k });
+  };
+
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setFotoPreview(URL.createObjectURL(file));
+  };
+
+  const toggleFitur = (fitur: string) => {
+    setSelectedFitur(prev => prev.includes(fitur) ? prev.filter(f => f !== fitur) : [...prev, fitur]);
+  };
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    const formData = new FormData(e.currentTarget);
+    
+    const allFitur = [...selectedFitur];
+    if (customFitur.trim()) allFitur.push(...customFitur.split(',').map(f => f.trim()));
+    formData.set('fitur_tambahan', allFitur.join(', '));
+
+    let res;
+    if (modal.type === 'tambah') {
+      res = await tambahKendaraan(formData);
+    } else if (modal.type === 'ubah' && modal.data) {
+      res = await ubahKendaraan(modal.data.id_kendaraan, formData, modal.data.foto_url);
+    }
+
+    if (res?.error) {
+      showNotif('error', res.error);
+      setLoading(false);
+    } else {
+      showNotif('success', `Kendaraan berhasil di${modal.type}.`);
+      resetForm();
+      window.location.reload();
+    }
+  }
+
+  async function handleHapus() {
+    if (!modal.data) return;
+    setLoading(true);
+    const res = await hapusKendaraan(modal.data.id_kendaraan, modal.data.foto_url);
+    if (res.error) {
+      showNotif('error', res.error);
+      setLoading(false);
+    } else {
+      showNotif('success', 'Kendaraan berhasil dihapus.');
+      resetForm();
+      window.location.reload();
+    }
+  }
+
+  async function handleToggleStatus(k: Kendaraan) {
+    const newStatus = k.status === 'tersedia' ? 'disewa' : 'tersedia';
+    const res = await ubahStatusKendaraan(k.id_kendaraan, newStatus);
+    if (res.error) showNotif('error', res.error);
+    else {
+      showNotif('success', 'Status ketersediaan diubah.');
+      window.location.reload();
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {notif && (
+        <div className={`p-4 rounded-lg text-sm font-medium ${notif.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+          {notif.msg}
+        </div>
+      )}
+
+      {/* Toolbar */}
+      <div className="flex flex-col md:flex-row gap-4 justify-between">
+        <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+            <input 
+              type="text" placeholder="Cari kendaraan atau plat..." 
+              className="pl-10 pr-4 py-2 border rounded-lg outline-none focus:border-blue-500 w-full md:w-64"
+              value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            />
+          </div>
+          <select className="px-4 py-2 border rounded-lg outline-none bg-white" value={filterJenis} onChange={(e) => { setFilterJenis(e.target.value); setPage(1); }}>
+            <option value="">Semua Jenis</option>
+            {KATEGORI_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+          </select>
+          <select className="px-4 py-2 border rounded-lg outline-none bg-white" value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}>
+            <option value="">Semua Status</option>
+            <option value="tersedia">Tersedia</option>
+            <option value="disewa">Disewa</option>
+          </select>
+        </div>
+        <button onClick={openTambah} className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          <Plus size={18} className="mr-2" /> Tambah Kendaraan
+        </button>
+      </div>
+
+      {/* Tabel */}
+      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm whitespace-nowrap">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-4 py-3">Kendaraan</th>
+                <th className="px-4 py-3">Spesifikasi</th>
+                <th className="px-4 py-3">Rute & Harga</th>
+                <th className="px-4 py-3">Fitur Tambahan</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {paginatedData.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">Belum ada data kendaraan.</td>
+                </tr>
+              ) : (
+                paginatedData.map(k => (
+                  <tr key={k.id_kendaraan} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 flex items-center space-x-3">
+                      {k.foto_url ? <img src={k.foto_url} alt="Foto" className="w-12 h-12 rounded object-cover border" /> : <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center border"><ImageIcon size={20} className="text-gray-400"/></div>}
+                      <div>
+                        <div className="font-semibold text-gray-900">{k.nama_kendaraan}</div>
+                        <div className="text-gray-500 text-xs">{k.jenis_kendaraan} • {k.plat_nomor}</div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-600 space-y-1">
+                      <div>Maks: {k.kapasitas} Org</div>
+                      <div>{k.transmisi} • {k.bahan_bakar}</div>
+                      <div>Thn: {k.tahun_kendaraan}</div>
+                    </td>
+                    <td className="px-4 py-3 text-xs">
+                      <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded font-medium">{k.rute_peruntukan}</span>
+                      <div className="mt-2 font-semibold text-gray-900">Rp {Number(k.harga_sewa || 0).toLocaleString('id-ID')}/hari</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1 max-w-[220px]">
+                        {k.fitur_tambahan ? (
+                          (Array.isArray(k.fitur_tambahan) 
+                            ? k.fitur_tambahan 
+                            : String(k.fitur_tambahan).split(', ')
+                          ).map((f, i) => f && (
+                            <span key={i} className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px] border">
+                              {f}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-gray-400 text-xs">-</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button onClick={() => handleToggleStatus(k)} className={`px-2.5 py-1 rounded-full text-xs font-medium border ${k.status === 'tersedia' ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'}`}>
+                        {k.status?.toUpperCase() || 'TERSEDIA'}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-right space-x-1">
+                      <button onClick={() => openUbah(k)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="Ubah"><Edit size={16} /></button>
+                      <button onClick={() => setModal({ isOpen: true, type: 'hapus', data: k })} className="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Hapus"><Trash2 size={16} /></button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        
+        {totalPages > 1 && (
+          <div className="flex justify-between items-center px-4 py-3 border-t bg-gray-50 text-sm">
+            <span className="text-gray-500">Halaman {page} dari {totalPages}</span>
+            <div className="space-x-2">
+              <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="p-1 border bg-white rounded disabled:opacity-50"><ChevronLeft size={16}/></button>
+              <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)} className="p-1 border bg-white rounded disabled:opacity-50"><ChevronRight size={16}/></button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* MODAL FORM TAMBAH / UBAH */}
+      {modal.isOpen && (modal.type === 'tambah' || modal.type === 'ubah') && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <form onSubmit={handleSubmit} className="p-6">
+              <div className="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 className="text-xl font-bold">{modal.type === 'tambah' ? 'Tambah Kendaraan Baru' : 'Ubah Data Kendaraan'}</h3>
+                <button type="button" onClick={resetForm} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div><label className="block text-sm font-medium mb-1">Nama Kendaraan</label><input name="nama_kendaraan" defaultValue={modal.data?.nama_kendaraan} required className="w-full border p-2 rounded" /></div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Jenis Kendaraan</label>
+                  <select name="jenis_kendaraan" defaultValue={modal.data?.jenis_kendaraan} required className="w-full border p-2 rounded bg-white">
+                    <option value="">Pilih Jenis</option>
+                    {KATEGORI_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
+                </div>
+                <div><label className="block text-sm font-medium mb-1">Plat Nomor (Unik)</label><input name="plat_nomor" defaultValue={modal.data?.plat_nomor} required className="w-full border p-2 rounded uppercase" /></div>
+                <div><label className="block text-sm font-medium mb-1">Harga Sewa / Hari (Rp)</label><input type="number" name="harga_sewa" defaultValue={modal.data?.harga_sewa} required min={1} className="w-full border p-2 rounded" /></div>
+                
+                <div><label className="block text-sm font-medium mb-1">Tahun Kendaraan</label><input type="number" name="tahun_kendaraan" defaultValue={modal.data?.tahun_kendaraan} required min={1990} max={new Date().getFullYear() + 1} className="w-full border p-2 rounded" /></div>
+                <div><label className="block text-sm font-medium mb-1">Kapasitas (Orang)</label><input type="number" name="kapasitas" defaultValue={modal.data?.kapasitas} required min={1} className="w-full border p-2 rounded" /></div>
+                
+                {/* Transmisi (Sinkron dengan database: Manual, Matic, Otomatis) */}
+                <div>
+                  <label className="block text-sm font-medium mb-1">Transmisi</label>
+                  <select name="transmisi" defaultValue={modal.data?.transmisi} required className="w-full border p-2 rounded bg-white">
+                    <option value="">Pilih Transmisi</option>
+                    {TRANSMISI_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
+                </div>
+
+                {/* Bahan Bakar (Sinkron dengan database: Bensin, Diesel, Hybrid, Listrik) */}
+                <div>
+                  <label className="block text-sm font-medium mb-1">Bahan Bakar</label>
+                  <select name="bahan_bakar" defaultValue={modal.data?.bahan_bakar} required className="w-full border p-2 rounded bg-white">
+                    <option value="">Pilih Bahan Bakar</option>
+                    {BAHAN_BAKAR_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
+                </div>
+
+                {/* Rute Peruntukan (Sinkron dengan database: Dalam Kota, Luar Kota, Keduanya) */}
+                <div>
+                  <label className="block text-sm font-medium mb-1">Rute Peruntukan</label>
+                  <select name="rute_peruntukan" defaultValue={modal.data?.rute_peruntukan} required className="w-full border p-2 rounded bg-white">
+                    <option value="">Pilih Rute</option>
+                    {RUTE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Status Ketersediaan</label>
+                  <select name="status" defaultValue={modal.data?.status || 'tersedia'} required className="w-full border p-2 rounded bg-white">
+                    <option value="tersedia">Tersedia</option><option value="disewa">Disewa</option>
+                  </select>
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-2">Fitur Tambahan</label>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    {FITUR_OPTIONS.map(fitur => (
+                      <label key={fitur} className="flex items-center space-x-2 text-sm">
+                        <input type="checkbox" checked={selectedFitur.includes(fitur)} onChange={() => toggleFitur(fitur)} className="rounded text-blue-600" />
+                        <span>{fitur}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <input type="text" placeholder="Fitur lain tambahan (pisahkan dengan koma)" value={customFitur} onChange={(e) => setCustomFitur(e.target.value)} className="w-full border p-2 rounded text-sm" />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-1">Foto Kendaraan {modal.type === 'tambah' && '(Wajib)'}</label>
+                  <input type="file" name="foto" accept="image/png, image/jpeg, image/webp" onChange={handleFotoChange} required={modal.type === 'tambah'} className="w-full border p-2 rounded text-sm" />
+                  {fotoPreview && <img src={fotoPreview} alt="Preview" className="mt-3 w-full max-w-[200px] h-32 object-cover rounded-lg border" />}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6 border-t pt-4">
+                <button type="button" onClick={resetForm} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Batal</button>
+                <button type="submit" disabled={loading} className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50">
+                  {loading ? 'Memproses...' : 'Simpan Data'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL HAPUS */}
+      {modal.isOpen && modal.type === 'hapus' && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 text-center">
+            <Trash2 size={48} className="mx-auto text-red-500 mb-4" />
+            <h3 className="text-lg font-bold">Hapus Kendaraan?</h3>
+            <p className="text-sm text-gray-500 mt-2 mb-6">Data <b>{modal.data?.nama_kendaraan}</b> tidak dapat dikembalikan. Pastikan tidak ada transaksi aktif.</p>
+            <div className="flex justify-center gap-3">
+              <button onClick={resetForm} className="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg w-full">Batal</button>
+              <button onClick={handleHapus} disabled={loading} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 w-full disabled:opacity-50">
+                {loading ? 'Menghapus...' : 'Ya, Hapus'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### FILE: src\app\admin\kendaraan\page.tsx
+```tsx
+import { ambilDaftarKendaraan } from '@/app/actions/admin-kendaraan';
+import KendaraanClient from './KendaraanClient';
+
+export const dynamic = 'force-dynamic';
+
+export default async function ManajemenKendaraanPage() {
+  const kendaraan = await ambilDaftarKendaraan();
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Manajemen Kendaraan</h1>
+        <p className="text-gray-500 text-sm mt-1">Kelola data inventaris kendaraan, spesifikasi preferensi CBF, dan harga sewa harian.</p>
+      </div>
+      <KendaraanClient initialData={kendaraan} />
+    </div>
+  );
+}
+```
+
+### FILE: src\app\admin\layout.tsx
+```tsx
+import DashboardLayout from '@/components/layout/DashboardLayout';
+import { wajibRole } from '@/lib/auth';
+
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  // Proteksi server ganda
+  const pengguna = await wajibRole(['admin']);
+
+  return (
+    <DashboardLayout role={pengguna.role} nama={pengguna.nama}>
+      {children}
+    </DashboardLayout>
+  );
+}
+```
+
+### FILE: src\app\admin\page.tsx
+```tsx
+export default function DashboardBIPage() {
+  return (
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">Dashboard Statistik & BI</h1>
+      <p className="text-gray-500">Halaman ini sedang dibangun. Grafik Recharts akan berada di sini.</p>
+    </div>
+  );
+}
+```
+
+### FILE: src\app\akses-ditolak\page.tsx
+```tsx
+import Link from 'next/link';
+
+export default function AksesDitolak() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+      <div className="text-center max-w-md">
+        <h1 className="text-6xl font-bold text-red-500 mb-4">403</h1>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Akses Ditolak</h2>
+        <p className="text-gray-600 mb-6">
+          Anda tidak memiliki hak akses (role) untuk melihat halaman ini.
+        </p>
+        <Link 
+          href="/"
+          className="inline-block px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition"
+        >
+          Kembali ke Beranda
+        </Link>
+      </div>
+    </div>
+  );
+}
+```
+
+### FILE: src\app\globals.css
+```css
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+```
+
+### FILE: src\app\layout.tsx
+```tsx
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Create Next App",
+  description: "Generated by create next app",
+};
+
+export default function RootLayout({ children }: LayoutProps<"/">) {
+  return (
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
+      <body className="min-h-full flex flex-col">{children}</body>
+    </html>
+  );
+}
+```
+
+### FILE: src\app\page.tsx
+```tsx
+import Link from 'next/link';
+import { NAMA_PERUSAHAAN } from '@/lib/config';
+import { ambilKendaraanTersedia } from '@/app/actions/publik-kendaraan';
+import { ambilPenggunaSaatIni } from '@/lib/auth';
+import CarCard from '@/components/kendaraan/CarCard';
+import Footer from '@/components/layout/Footer';
+import { Search, ShieldCheck, CreditCard, Key, LayoutDashboard } from 'lucide-react';
+
+export const dynamic = 'force-dynamic'; 
+
+export default async function BerandaUtama() {
+  const [mobilUnggulan, pengguna] = await Promise.all([
+    ambilKendaraanTersedia(3),
+    ambilPenggunaSaatIni()
+  ]);
+
+  let linkDashboard = '/pencarian-pintar';
+  if (pengguna) {
+    if (pengguna.role === 'super_admin') linkDashboard = '/super-admin';
+    else if (pengguna.role === 'admin') linkDashboard = '/admin';
+    else if (pengguna.role === 'staf') linkDashboard = '/staf';
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col bg-white">
+      <header className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <Link href="/" className="font-bold text-blue-600 text-xl">{NAMA_PERUSAHAAN}</Link>
+          <div className="flex items-center space-x-4">
+            {pengguna ? (
+              <Link href={linkDashboard} className="flex items-center text-sm font-medium bg-blue-50 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 transition">
+                <LayoutDashboard size={16} className="mr-2" />
+                Masuk Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition my-auto">Masuk</Link>
+                <Link href="/register" className="text-sm font-medium bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">Daftar</Link>
+              </>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1">
+        <section className="relative bg-blue-50 py-20 lg:py-32 overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center lg:text-left flex flex-col lg:flex-row items-center">
+            <div className="lg:w-1/2 space-y-6">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 tracking-tight leading-tight">
+                Sewa Mobil Mudah di <span className="text-blue-600">Pekanbaru</span>
+              </h1>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto lg:mx-0">
+                Temukan kendaraan yang paling cocok untuk perjalanan dinas maupun liburan Anda menggunakan algoritma Pencarian Pintar (CBF) kami.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
+                <Link href="/pencarian-pintar" className="px-8 py-3.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200">
+                  Cari Mobil Sekarang
+                </Link>
+              </div>
+            </div>
+            <div className="lg:w-1/2 mt-12 lg:mt-0 flex justify-center">
+              <div className="w-72 h-72 md:w-96 md:h-96 bg-blue-200 rounded-full blur-3xl opacity-50 absolute"></div>
+              <HeroCarCardIllustration fallbackIllustration className="relative z-10" />
+            </div>
+          </div>
+        </section>
+
+        <section className="py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl font-bold text-gray-900">Cara Pesan Kendaraan</h2>
+              <p className="text-gray-500 mt-4">Proses pemesanan mandiri 100% online tanpa ribet.</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-blue-100">
+                  <Search size={28} />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2">1. Pencarian Pintar</h3>
+                <p className="text-sm text-gray-500">Masukkan preferensi Anda, sistem akan merekomendasikan mobil terbaik.</p>
+              </div>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-blue-100">
+                  <ShieldCheck size={28} />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2">2. Upload Syarat</h3>
+                <p className="text-sm text-gray-500">Pilih tanggal dan unggah foto KTP serta SIM secara online.</p>
+              </div>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-blue-100">
+                  <CreditCard size={28} />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2">3. Bayar Online</h3>
+                <p className="text-sm text-gray-500">Selesaikan pembayaran aman menggunakan Midtrans Snap.</p>
+              </div>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-blue-100">
+                  <Key size={28} />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2">4. Ambil Kendaraan</h3>
+                <p className="text-sm text-gray-500">Tunjukkan bukti bayar kepada Staf kami dan bawa mobil Anda.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-20 bg-gray-50 border-t border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-end mb-10">
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900">Kendaraan Unggulan</h2>
+                <p className="text-gray-500 mt-2">Armada siap pakai untuk kebutuhan perjalanan Anda.</p>
+              </div>
+              <Link href="/pencarian-pintar" className="hidden sm:inline-block text-blue-600 font-medium hover:underline">
+                Lihat Semua Armada &rarr;
+              </Link>
+            </div>
+
+            {mobilUnggulan.length === 0 ? (
+              <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-300">
+                <p className="text-gray-500">Belum ada armada kendaraan yang tersedia saat ini.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {mobilUnggulan.map(mobil => (
+                  <CarCard key={mobil.id_kendaraan} mobil={mobil} />
+                ))}
+              </div>
+            )}
+            
+            <div className="mt-8 text-center sm:hidden">
+               <Link href="/pencarian-pintar" className="text-blue-600 font-medium hover:underline">
+                Lihat Semua Armada &rarr;
+              </Link>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}
+
+function HeroCarCardIllustration({ fallbackIllustration, className }: { fallbackIllustration?: boolean, className?: string }) {
+  if (!fallbackIllustration) return null;
+  return (
+    <div className={`bg-white p-6 rounded-2xl shadow-xl shadow-blue-900/5 w-80 transform rotate-3 ${className}`}>
+      <div className="h-40 bg-gray-100 rounded-xl mb-4 flex items-center justify-center text-gray-300">
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+      </div>
+      <div className="h-4 bg-gray-200 rounded-full w-3/4 mb-3"></div>
+      <div className="h-4 bg-gray-200 rounded-full w-1/2 mb-6"></div>
+      <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+        <div className="h-6 bg-blue-100 rounded-full w-1/3"></div>
+        <div className="h-8 bg-blue-600 rounded-lg w-1/3"></div>
+      </div>
+    </div>
+  );
+}
+```
+
+### FILE: src\app\staf\layout.tsx
+```tsx
+import DashboardLayout from '@/components/layout/DashboardLayout';
+import { wajibRole } from '@/lib/auth';
+
+export default async function StafLayout({ children }: { children: React.ReactNode }) {
+  const pengguna = await wajibRole(['staf']);
+
+  return (
+    <DashboardLayout role={pengguna.role} nama={pengguna.nama}>
+      {children}
+    </DashboardLayout>
+  );
+}
+```
+
+### FILE: src\app\staf\page.tsx
+```tsx
+export default function DaftarBookingPage() {
+  return (
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">Daftar Booking Aktif Hari Ini</h1>
+      <p className="text-gray-500">Menampilkan daftar pelanggan yang akan mengambil atau mengembalikan mobil hari ini.</p>
+    </div>
+  );
+}
+```
+
+### FILE: src\app\super-admin\layout.tsx
+```tsx
+import DashboardLayout from '@/components/layout/DashboardLayout';
+import { wajibRole } from '@/lib/auth';
+
+export default async function SuperAdminLayout({ children }: { children: React.ReactNode }) {
+  // Proteksi server ganda
+  const pengguna = await wajibRole(['super_admin']);
+
+  return (
+    <DashboardLayout role={pengguna.role} nama={pengguna.nama}>
+      {children}
+    </DashboardLayout>
+  );
+}
+```
+
+### FILE: src\app\super-admin\page.tsx
+```tsx
+import { ambilDaftarPengguna } from '@/app/actions/super-admin';
+import UserManagementClient from './UserManagementClient';
+
+export const dynamic = 'force-dynamic';
+
+export default async function ManajemenPenggunaPage() {
+  const users = await ambilDaftarPengguna();
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Manajemen Pengguna Aplikasi</h1>
+        <p className="text-gray-500 text-sm mt-1">Kelola hak akses, tambah staf internal, dan pantau status akun pengguna.</p>
+      </div>
+      
+      <UserManagementClient initialUsers={users} />
+    </div>
+  );
+}
+```
+
+### FILE: src\app\super-admin\UserManagementClient.tsx
+```tsx
+'use client';
+
+import { useState, useMemo } from 'react';
+import { Search, Plus, Ban, ShieldCheck, ChevronLeft, ChevronRight } from 'lucide-react';
+import { tambahPenggunaAdmin, ubahRolePengguna, toggleStatusPengguna } from '@/app/actions/super-admin';
+
+// Ubah tipe id menjadi id_user
+type User = {
+  id_user: string;
+  nama: string;
+  email: string;
+  role: string;
+  no_hp: string;
+  isBanned: boolean;
+};
+
+export default function UserManagementClient({ initialUsers }: { initialUsers: User[] }) {
+  const [users, setUsers] = useState<User[]>(initialUsers);
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const perPage = 10;
+
+  const [notif, setNotif] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [modal, setModal] = useState<{ isOpen: boolean; type: 'tambah' | 'role' | 'status'; user: User | null }>({
+    isOpen: false,
+    type: 'tambah',
+    user: null,
+  });
+
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      const matchSearch = u.nama?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase());
+      const matchRole = roleFilter ? u.role === roleFilter : true;
+      return matchSearch && matchRole;
+    });
+  }, [users, search, roleFilter]);
+
+  const paginatedUsers = filteredUsers.slice((page - 1) * perPage, page * perPage);
+  const totalPages = Math.ceil(filteredUsers.length / perPage);
+
+  const showNotif = (type: 'success' | 'error', msg: string) => {
+    setNotif({ type, msg });
+    setTimeout(() => setNotif(null), 5000);
+  };
+
+  const closeModal = () => setModal({ isOpen: false, type: 'tambah', user: null });
+
+  async function handleTambah(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    const formData = new FormData(e.currentTarget);
+    const res = await tambahPenggunaAdmin(formData);
+    
+    if (res.error) {
+      showNotif('error', res.error);
+    } else {
+      showNotif('success', 'Akun berhasil dibuat dan diaktifkan.');
+      window.location.reload();
+    }
+    setLoading(false);
+  }
+
+  async function handleUbahRole(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!modal.user) return;
+    setLoading(true);
+    const formData = new FormData(e.currentTarget);
+    const newRole = formData.get('role') as string;
+    // Menggunakan id_user
+    const res = await ubahRolePengguna(modal.user.id_user, newRole);
+    
+    if (res.error) showNotif('error', res.error);
+    else {
+      showNotif('success', 'Role berhasil diperbarui.');
+      window.location.reload();
+    }
+    setLoading(false);
+  }
+
+  async function handleToggleStatus() {
+    if (!modal.user) return;
+    setLoading(true);
+    // Menggunakan id_user
+    const res = await toggleStatusPengguna(modal.user.id_user, modal.user.isBanned);
+    
+    if (res.error) showNotif('error', res.error);
+    else {
+      showNotif('success', `Akun berhasil di${modal.user.isBanned ? 'aktifkan' : 'nonaktifkan'}.`);
+      window.location.reload();
+    }
+    setLoading(false);
+  }
+
+  const roleColors: Record<string, string> = {
+    super_admin: 'bg-purple-100 text-purple-800',
+    admin: 'bg-blue-100 text-blue-800',
+    staf: 'bg-amber-100 text-amber-800',
+    pelanggan: 'bg-green-100 text-green-800',
+  };
+
+  return (
+    <div className="space-y-6">
+      {notif && (
+        <div className={`p-4 rounded-lg text-sm font-medium ${notif.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+          {notif.msg}
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row gap-4 justify-between">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+            <input 
+              type="text" 
+              placeholder="Cari nama atau email..." 
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg outline-none focus:border-blue-500 w-full sm:w-64"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            />
+          </div>
+          <select 
+            className="px-4 py-2 border border-gray-300 rounded-lg outline-none focus:border-blue-500 bg-white"
+            value={roleFilter}
+            onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
+          >
+            <option value="">Semua Role</option>
+            <option value="admin">Admin</option>
+            <option value="staf">Staf</option>
+            <option value="pelanggan">Pelanggan</option>
+          </select>
+        </div>
+        <button 
+          onClick={() => setModal({ isOpen: true, type: 'tambah', user: null })}
+          className="flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+        >
+          <Plus size={18} className="mr-2" /> Tambah Akun Internal
+        </button>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-gray-50 text-gray-600 font-medium border-b border-gray-200">
+              <tr>
+                <th className="px-6 py-4">Nama & Email</th>
+                <th className="px-6 py-4">Role</th>
+                <th className="px-6 py-4">Kontak</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {paginatedUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">Tidak ada data pengguna yang ditemukan.</td>
+                </tr>
+              ) : (
+                paginatedUsers.map((u, index) => (
+                  <tr key={u.id_user || `fallback-${index}`} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <div className="font-semibold text-gray-900">{u.nama || '-'}</div>
+                      <div className="text-gray-500">{u.email}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${roleColors[u.role] || 'bg-gray-100 text-gray-800'}`}>
+                        {u.role.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-600">{u.no_hp || '-'}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${u.isBanned ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                        {u.isBanned ? 'Nonaktif' : 'Aktif'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right space-x-2">
+                      <button 
+                        onClick={() => setModal({ isOpen: true, type: 'role', user: u })}
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                        title="Ubah Role"
+                      >
+                        <ShieldCheck size={18} />
+                      </button>
+                      <button 
+                        onClick={() => setModal({ isOpen: true, type: 'status', user: u })}
+                        className={`p-1.5 rounded ${u.isBanned ? 'text-green-600 hover:bg-green-50' : 'text-red-600 hover:bg-red-50'}`}
+                        title={u.isBanned ? 'Aktifkan Akun' : 'Blokir Akun'}
+                      >
+                        <Ban size={18} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200 bg-gray-50">
+            <span className="text-sm text-gray-500">Halaman {page} dari {totalPages}</span>
+            <div className="flex space-x-2">
+              <button 
+                onClick={() => setPage(p => Math.max(1, p - 1))} 
+                disabled={page === 1}
+                className="p-1.5 rounded bg-white border border-gray-300 disabled:opacity-50"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button 
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))} 
+                disabled={page === totalPages}
+                className="p-1.5 rounded bg-white border border-gray-300 disabled:opacity-50"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {modal.isOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            
+            {modal.type === 'tambah' && (
+              <form onSubmit={handleTambah}>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Tambah Akun Internal</h3>
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+                    <input name="nama" type="text" required className="w-full px-3 py-2 border rounded-lg outline-none focus:border-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input name="email" type="email" required className="w-full px-3 py-2 border rounded-lg outline-none focus:border-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Password Sementara</label>
+                    <input name="password" type="text" required minLength={6} className="w-full px-3 py-2 border rounded-lg outline-none focus:border-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">No HP</label>
+                    <input name="no_hp" type="tel" required className="w-full px-3 py-2 border rounded-lg outline-none focus:border-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Alamat</label>
+                    <textarea name="alamat" rows={2} className="w-full px-3 py-2 border rounded-lg outline-none focus:border-blue-500"></textarea>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Pilih Role</label>
+                    <select name="role" required className="w-full px-3 py-2 border rounded-lg outline-none focus:border-blue-500 bg-white">
+                      <option value="admin">Admin (Laporan & Kendaraan)</option>
+                      <option value="staf">Staf (Operasional)</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-3">
+                  <button type="button" onClick={closeModal} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Batal</button>
+                  <button type="submit" disabled={loading} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                    {loading ? 'Menyimpan...' : 'Simpan Akun'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {modal.type === 'role' && modal.user && (
+              <form onSubmit={handleUbahRole}>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Ubah Hak Akses</h3>
+                <p className="text-sm text-gray-500 mb-4">Pengguna: <span className="font-medium text-gray-900">{modal.user.email}</span></p>
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Role Baru</label>
+                  <select name="role" defaultValue={modal.user.role} className="w-full px-3 py-2 border rounded-lg outline-none focus:border-blue-500 bg-white">
+                    <option value="admin">Admin</option>
+                    <option value="staf">Staf</option>
+                    <option value="pelanggan">Pelanggan</option>
+                  </select>
+                </div>
+                <div className="flex justify-end space-x-3">
+                  <button type="button" onClick={closeModal} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Batal</button>
+                  <button type="submit" disabled={loading} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                    {loading ? 'Memproses...' : 'Ubah Role'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {modal.type === 'status' && modal.user && (
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Konfirmasi Status Akun</h3>
+                <p className="text-gray-600 text-sm mb-6">
+                  Apakah Anda yakin ingin {modal.user.isBanned ? <span className="font-semibold text-green-600">mengaktifkan kembali</span> : <span className="font-semibold text-red-600">menonaktifkan (blokir)</span>} akun <strong>{modal.user.email}</strong>?
+                  {!modal.user.isBanned && " Akun yang diblokir tidak akan bisa login ke dalam sistem."}
+                </p>
+                <div className="flex justify-end space-x-3">
+                  <button type="button" onClick={closeModal} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Batal</button>
+                  <button onClick={handleToggleStatus} disabled={loading} className={`px-4 py-2 text-white rounded-lg disabled:opacity-50 ${modal.user.isBanned ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}>
+                    {loading ? 'Memproses...' : modal.user.isBanned ? 'Ya, Aktifkan' : 'Ya, Nonaktifkan'}
+                  </button>
+                </div>
+              </div>
+            )}
+            
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### FILE: src\components\kendaraan\CarCard.tsx
+```tsx
+import Link from 'next/link';
+import { Users, Gauge, Droplet, Image as ImageIcon } from 'lucide-react';
+import { Kendaraan } from '@/types';
+import { formatRupiah } from '@/lib/formatters';
+
+export default function CarCard({ mobil }: { mobil: Kendaraan }) {
+  return (
+    <Link href={`/mobil/${mobil.id_kendaraan}`} className="block group">
+      <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100 overflow-hidden flex flex-col h-full">
+        {/* Gambar */}
+        <div className="relative h-48 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
+          {mobil.foto_url ? (
+            <img 
+              src={mobil.foto_url} 
+              alt={mobil.nama_kendaraan} 
+              className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+            />
+          ) : (
+            <ImageIcon size={48} className="text-gray-300" />
+          )}
+          <div className="absolute top-3 right-3 bg-white/90 backdrop-blur text-blue-700 text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+            {mobil.jenis_kendaraan}
+          </div>
+        </div>
+
+        {/* Informasi Utama */}
+        <div className="p-5 flex-1 flex flex-col">
+          <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition">{mobil.nama_kendaraan}</h3>
+          
+          <div className="grid grid-cols-3 gap-2 mt-4 mb-4 text-xs text-gray-600">
+            <div className="flex flex-col items-center justify-center p-2 bg-gray-50 rounded-lg">
+              <Users size={16} className="mb-1 text-gray-400" />
+              <span>{mobil.kapasitas} Org</span>
+            </div>
+            <div className="flex flex-col items-center justify-center p-2 bg-gray-50 rounded-lg">
+              <Gauge size={16} className="mb-1 text-gray-400" />
+              <span>{mobil.transmisi}</span>
+            </div>
+            <div className="flex flex-col items-center justify-center p-2 bg-gray-50 rounded-lg">
+              <Droplet size={16} className="mb-1 text-gray-400" />
+              <span>{mobil.bahan_bakar}</span>
+            </div>
+          </div>
+
+          <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
+            <div>
+              <span className="text-gray-500 text-xs">Harga Sewa</span>
+              <div className="font-bold text-gray-900">{formatRupiah(mobil.harga_sewa)}<span className="text-xs font-normal text-gray-500">/hari</span></div>
+            </div>
+            <div className="bg-blue-50 text-blue-600 px-4 py-2 rounded-lg text-sm font-medium group-hover:bg-blue-600 group-hover:text-white transition">
+              Detail
+            </div>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+```
+
+### FILE: src\components\layout\DashboardLayout.tsx
+```tsx
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { Menu, X, LogOut, Users, LayoutDashboard, Car, FileText, Activity, CalendarClock, ClipboardCheck, Store, KeyRound, Undo2, Printer } from 'lucide-react';
+import { logoutAction } from '@/app/actions/auth';
+import { NAMA_PERUSAHAAN } from '@/lib/config';
+
+// Definisi menu berdasarkan Master Brief
+const superAdminMenus = [
+  { label: 'Manajemen Pengguna Aplikasi', href: '/super-admin', icon: Users },
+];
+
+const adminMenus = [
+  { label: 'Dashboard Statistik & BI', href: '/admin', icon: LayoutDashboard },
+  { label: 'Manajemen Kendaraan', href: '/admin/kendaraan', icon: Car },
+  { label: 'Laporan & Analitik (BI)', href: '/admin/laporan', icon: FileText },
+  { label: 'Monitoring Transaksi', href: '/admin/transaksi', icon: Activity },
+];
+
+const stafMenus = [
+  { label: 'Daftar Booking Aktif Hari Ini', href: '/staf', icon: CalendarClock },
+  { label: 'Pengecekan Ketersediaan', href: '/staf/ketersediaan', icon: ClipboardCheck },
+  { label: 'Transaksi Walk-in', href: '/staf/walk-in', icon: Store },
+  { label: 'Proses Serah Terima', href: '/staf/serah-terima/placeholder', icon: KeyRound },
+  { label: 'Proses Pengembalian', href: '/staf/pengembalian/placeholder', icon: Undo2 },
+  { label: 'Cetak Dokumen', href: '/staf/cetak/placeholder', icon: Printer },
+];
+
+export default function DashboardLayout({ 
+  children, role, nama 
+}: { 
+  children: React.ReactNode; role: string; nama: string; 
+}) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Menentukan menu yang aktif berdasarkan role
+  let menuItems: any[] = [];
+  if (role === 'super_admin') menuItems = superAdminMenus;
+  else if (role === 'admin') menuItems = adminMenus;
+  else if (role === 'staf') menuItems = stafMenus;
+
+  return (
+    <div className="min-h-screen bg-gray-100 flex">
+      {/* Sidebar Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`fixed inset-y-0 left-0 bg-white w-64 shadow-lg transform transition-transform duration-200 ease-in-out z-30 lg:translate-x-0 lg:static lg:inset-auto flex flex-col ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="flex items-center justify-center h-16 border-b border-gray-200 px-4">
+          <span className="font-bold text-blue-600 text-lg text-center leading-tight">
+            {NAMA_PERUSAHAAN}
+          </span>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href || (item.href !== '/admin' && item.href !== '/super-admin' && item.href !== '/staf' && pathname.startsWith(item.href));
+            return (
+              <Link 
+                key={item.label} 
+                href={item.href}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center px-3 py-2.5 rounded-lg transition text-sm font-medium ${isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100'}`}
+              >
+                <Icon size={18} className={`mr-3 ${isActive ? 'text-blue-700' : 'text-gray-500'}`} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="p-4 border-t border-gray-200">
+          <button 
+            onClick={() => logoutAction()}
+            className="flex items-center w-full px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition"
+          >
+            <LogOut size={18} className="mr-3" />
+            Keluar
+          </button>
+        </div>
+      </aside>
+
+      {/* Konten Utama */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header Atas */}
+        <header className="bg-white h-16 shadow-sm flex items-center justify-between px-4 lg:px-8 border-b border-gray-200">
+          <button 
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="lg:hidden text-gray-500 hover:text-gray-700 focus:outline-none"
+          >
+            <Menu size={24} />
+          </button>
+          <div className="hidden lg:block" /> {/* Spacer */}
+          
+          <div className="flex items-center space-x-3 text-sm">
+            <span className="text-gray-500 bg-gray-100 px-2 py-1 rounded-md capitalize font-medium">
+              {role.replace('_', ' ')}
+            </span>
+            <span className="font-semibold text-gray-900">{nama}</span>
+          </div>
+        </header>
+
+        {/* Halaman */}
+        <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
+```
+
+### FILE: src\components\layout\Footer.tsx
+```tsx
+import Link from 'next/link';
+import { NAMA_PERUSAHAAN, ALAMAT_PERUSAHAAN } from '@/lib/config';
+import { Car, MapPin, Phone, Mail } from 'lucide-react';
+
+export default function Footer() {
+  return (
+    <footer className="bg-gray-900 text-gray-300 py-12 mt-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div>
+            <div className="flex items-center space-x-2 text-white font-bold text-xl mb-4">
+              <Car className="text-blue-500" />
+              <span>{NAMA_PERUSAHAAN}</span>
+            </div>
+            <p className="text-sm text-gray-400 leading-relaxed">
+              Penyedia layanan penyewaan kendaraan terpercaya di Pekanbaru, Riau. 
+              Berkomitmen memberikan kenyamanan dan keamanan untuk perjalanan Anda.
+            </p>
+          </div>
+          
+          <div>
+            <h3 className="text-white font-semibold mb-4">Tautan Cepat</h3>
+            <ul className="space-y-2 text-sm">
+              <li><Link href="/" className="hover:text-blue-400 transition">Beranda</Link></li>
+              <li><Link href="/pencarian-pintar" className="hover:text-blue-400 transition">Pencarian Pintar & Katalog</Link></li>
+              <li><Link href="/login" className="hover:text-blue-400 transition">Masuk Akun</Link></li>
+              <li><Link href="/register" className="hover:text-blue-400 transition">Daftar Akun Baru</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="text-white font-semibold mb-4">Kontak Kami</h3>
+            <ul className="space-y-3 text-sm">
+              <li className="flex items-start space-x-3">
+                <MapPin size={18} className="text-blue-500 shrink-0" />
+                <span>{ALAMAT_PERUSAHAAN}</span>
+              </li>
+              <li className="flex items-center space-x-3">
+                <Phone size={18} className="text-blue-500 shrink-0" />
+                <span>+62 812 3456 7890</span>
+              </li>
+              <li className="flex items-center space-x-3">
+                <Mail size={18} className="text-blue-500 shrink-0" />
+                <span>info@cintariautour.com</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+        
+        <div className="border-t border-gray-800 mt-12 pt-8 text-sm text-center text-gray-500">
+          © {new Date().getFullYear()} {NAMA_PERUSAHAAN}. Hak Cipta Dilindungi.
+        </div>
+      </div>
+    </footer>
+  );
+}
+```
+
+### FILE: src\lib\auth.ts
+```ts
+import { createClient } from './supabase/server';
+import { redirect } from 'next/navigation';
+import { User, Role } from '@/types';
+
+export async function ambilPenggunaSaatIni(): Promise<User | null> {
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return null;
+  }
+
+  // Mengambil profil dan role dari tabel public.users
+  const { data: userData, error: dbError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id_user', user.id)
+    .single();
+
+  // Fallback aman jika data profil di database belum lengkap
+  if (dbError || !userData) {
+    return {
+      id_user: user.id,
+      nama: user.user_metadata?.nama || user.email?.split('@')[0] || 'Pengguna',
+      email: user.email || '',
+      role: 'pelanggan',
+      no_hp: user.user_metadata?.no_hp || null,
+      alamat: user.user_metadata?.alamat || null,
+    } as User;
+  }
+
+  return userData as User;
+}
+
+export async function wajibRole(rolesDiizinkan: Role[]) {
+  const pengguna = await ambilPenggunaSaatIni();
+
+  if (!pengguna) {
+    redirect('/login');
+  }
+
+  if (!rolesDiizinkan.includes(pengguna.role)) {
+    redirect('/akses-ditolak');
+  }
+
+  return pengguna;
+}
+```
+
+### FILE: src\lib\config.ts
+```ts
+// Nilai-nilai ini bisa kamu ubah sesuai kebutuhan skripsi nanti
+export const NAMA_PERUSAHAAN = "PT Cinta Riau Tour & Travel";
+export const ALAMAT_PERUSAHAAN = "Jl. Sudirman No. 123, Pekanbaru, Riau"; // Silakan sesuaikan dengan alamat asli
+
+export const KATEGORI_OPTIONS = ["MPV", "SUV", "Hatchback", "Sedan", "Minibus"] as const;
+export const BAHAN_BAKAR_OPTIONS = ["Bensin", "Diesel", "Hybrid", "Listrik"] as const;
+export const TRANSMISI_OPTIONS = ["Manual", "Matic"] as const;
+
+export const RUTE_OPTIONS = [
+  { value: "dalam_kota", label: "Dalam Kota" },
+  { value: "luar_kota", label: "Luar Kota" },
+  { value: "keduanya", label: "Dalam & Luar Kota" }
+] as const;
+
+export const FITUR_OPTIONS = [
+  "Double Blower", 
+  "Apple CarPlay", 
+  "Android Auto", 
+  "Kamera Mundur", 
+  "Sensor Parkir", 
+  "Sunroof", 
+  "Cruise Control", 
+  "Kursi Kulit", 
+  "Audio Premium"
+] as const;
+
+// Batas rekomendasi mobil (Top-N)
+export const TOP_N_REKOMENDASI = 5;
+
+// Denda keterlambatan pengembalian (% dari harga sewa harian per hari keterlambatan)
+export const DENDA_PERSEN_PER_HARI = 10;
+
+// Batas waktu kadaluarsa pembayaran Midtrans Snap (dalam menit)
+export const SNAP_EXPIRY_MENIT = 60;
+```
+
+### FILE: src\lib\formatters.ts
+```ts
+import { format, differenceInDays } from 'date-fns';
+import { id } from 'date-fns/locale';
+
+export const formatRupiah = (angka: number): string => {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(angka);
+};
+
+export const formatTanggal = (tanggal: string | Date): string => {
+  // Format contoh: 12 Agustus 2026, 14:30 WIB
+  const dateObj = typeof tanggal === 'string' ? new Date(tanggal) : tanggal;
+  return format(dateObj, 'd MMMM yyyy, HH:mm', { locale: id }) + ' WIB';
+};
+
+export const hitungJumlahHari = (start: string | Date, end: string | Date): number => {
+  const startDate = typeof start === 'string' ? new Date(start) : start;
+  const endDate = typeof end === 'string' ? new Date(end) : end;
+  
+  // Minimal sewa dihitung 1 hari walaupun dikembalikan di hari yang sama
+  const selisih = differenceInDays(endDate, startDate);
+  return selisih < 1 ? 1 : selisih;
+};
+```
+
+### FILE: src\lib\supabase\admin.ts
+```ts
+import { createClient } from '@supabase/supabase-js';
+
+export function createAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  );
+}
+```
+
+### FILE: src\lib\supabase\client.ts
+```ts
+import { createBrowserClient } from '@supabase/ssr';
+
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
+```
+
+### FILE: src\lib\supabase\server.ts
+```ts
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+
+export async function createClient() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch (error) {
+            // Error ini diabaikan jika dipanggil dari Server Component 
+            // (karena Server Component tidak bisa mengubah cookie)
+          }
+        },
+      },
+    }
+  );
+}
+
+// KHUSUS SERVER: Client dengan hak akses super (melewati RLS)
+// Hanya gunakan ini untuk aksi admin tersembunyi yang benar-benar divalidasi
+export async function createAdminClient() {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!, // Memakai Service Role Key
+    {
+      cookies: {
+        getAll() { return []; },
+        setAll() {},
+      }
+    }
+  );
+}
+```
+
+### FILE: src\lib\validations.ts
+```ts
+import { z } from 'zod';
+
+export const loginSchema = z.object({
+  email: z.string().email({ message: "Format email tidak valid." }),
+  password: z.string().min(1, { message: "Password wajib diisi." }),
+});
+
+export const registerSchema = z.object({
+  nama: z.string().min(3, { message: "Nama minimal 3 karakter." }),
+  email: z.string().email({ message: "Format email tidak valid." }),
+  password: z.string().min(6, { message: "Password minimal 6 karakter." }),
+  konfirmasiPassword: z.string(),
+  no_hp: z.string().min(10, { message: "Nomor HP minimal 10 angka." }),
+  alamat: z.string().min(10, { message: "Alamat terlalu singkat, mohon lengkapi." }),
+}).refine((data) => data.password === data.konfirmasiPassword, {
+  message: "Konfirmasi password tidak cocok.",
+  path: ["konfirmasiPassword"],
+});
+```
+
+### FILE: src\middleware.ts
+```ts
+import { NextResponse, type NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({
+    request,
+  });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({
+            request,
+          });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  // Perbarui dan dapatkan sesi Auth
+  const { data: { user } } = await supabase.auth.getUser();
+  const pathname = request.nextUrl.pathname;
+
+  // Rute terproteksi
+  const isProtected = pathname.startsWith('/super-admin') || 
+                      pathname.startsWith('/admin') || 
+                      pathname.startsWith('/staf') || 
+                      pathname.startsWith('/transaksi') || 
+                      pathname.startsWith('/riwayat');
+
+  // 1. Jika belum login dan masuk rute terproteksi
+  if (!user && isProtected) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    // Simpan rute asli agar bisa dikembalikan setelah login (opsional)
+    url.searchParams.set('next', pathname);
+    return NextResponse.redirect(url);
+  }
+
+  // 2. Jika sudah login
+  if (user) {
+    const { data: userData } = await supabase.from('users').select('role').eq('id_user', user.id).single();
+    const role = userData?.role || 'pelanggan';
+
+    // 2a. Cegah user login masuk ke halaman login/register lagi
+    if (pathname === '/login' || pathname === '/register') {
+      const url = request.nextUrl.clone();
+      if (role === 'super_admin') url.pathname = '/super-admin';
+      else if (role === 'admin') url.pathname = '/admin';
+      else if (role === 'staf') url.pathname = '/staf';
+      else url.pathname = '/pencarian-pintar';
+      return NextResponse.redirect(url);
+    }
+
+    // 2b. Blokir akses ke role lain
+    if (isProtected) {
+      if (pathname.startsWith('/super-admin') && role !== 'super_admin') {
+        return NextResponse.redirect(new URL('/akses-ditolak', request.url));
+      }
+      if (pathname.startsWith('/admin') && role !== 'admin') {
+        return NextResponse.redirect(new URL('/akses-ditolak', request.url));
+      }
+      if (pathname.startsWith('/staf') && role !== 'staf') {
+        return NextResponse.redirect(new URL('/akses-ditolak', request.url));
+      }
+      if ((pathname.startsWith('/transaksi') || pathname.startsWith('/riwayat')) && role !== 'pelanggan') {
+        return NextResponse.redirect(new URL('/akses-ditolak', request.url));
+      }
+    }
+  }
+
+  return supabaseResponse;
+}
+
+// Menentukan file apa saja yang diawasi middleware (mengabaikan aset statis)
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+};
+```
+
+### FILE: src\types\index.ts
+```ts
+export type Role = 'super_admin' | 'admin' | 'staf' | 'pelanggan';
+
+export interface User {
+  id_user: string; // Terhubung dengan ID di Supabase Auth
+  nama: string;
+  email: string;
+  role: Role;
+  no_hp: string | null; // Diperbaiki: bisa null dari database
+  alamat: string | null; // Diperbaiki: bisa null dari database
+  created_at?: string;
+}
+
+export interface Kendaraan {
+  id_kendaraan: string;
+  nama_kendaraan: string;
+  jenis_kendaraan: string;
+  plat_nomor: string;
+  harga_sewa: number;
+  tahun_kendaraan: number;
+  bahan_bakar: string;
+  transmisi: string;
+  rute_peruntukan: 'dalam_kota' | 'luar_kota' | 'keduanya';
+  kapasitas: number;
+  fitur_tambahan: string[]; // Disimpan sebagai array teks
+  foto_url: string | null; // Diperbaiki: bisa null jika belum diupload
+  status: 'tersedia' | 'disewa';
+  created_at?: string;
+}
+
+export interface Pemesanan {
+  id_pemesanan: string;
+  id_user: string;
+  id_kendaraan: string;
+  rute_perjalanan: string;
+  tanggal_pesan: string; 
+  tanggal_sewa: string;
+  tanggal_kembali: string;
+  ktp_url: string | null; // Diperbaiki: pelanggan upload belakangan
+  sim_url: string | null; // Diperbaiki: pelanggan upload belakangan
+  status_verifikasi: 'menunggu' | 'valid' | 'ditolak';
+  status_pemesanan: 'menunggu_pembayaran' | 'dibayar' | 'diambil' | 'selesai' | 'dibatalkan';
+  created_at?: string;
+}
+
+export interface Transaksi {
+  id_transaksi: string;
+  id_user: string | null; // Staf pemroses, null sampai diproses
+  id_kendaraan: string;
+  id_pemesanan: string;
+  tanggal_sewa: string;
+  tanggal_kembali: string;
+  tanggal_kembali_aktual: string | null; // Null sampai mobil dikembalikan
+  total_harga: number;
+  metode_pembayaran: string;
+  status_pembayaran: 'pending' | 'settlement' | 'expire' | 'cancel' | 'deny';
+  id_transaksi_midtrans: string | null;
+  status: 'berjalan' | 'selesai' | 'dibatalkan';
+  denda: number;
+  created_at?: string;
+}
+```
+
+### FILE: tsconfig.json
+```json
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}
+```

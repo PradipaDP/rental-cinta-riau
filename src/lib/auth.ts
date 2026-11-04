@@ -17,8 +17,16 @@ export async function ambilPenggunaSaatIni(): Promise<User | null> {
     .eq('id_user', user.id)
     .single();
 
+  // Fallback aman jika data profil di database belum lengkap
   if (dbError || !userData) {
-    return null;
+    return {
+      id_user: user.id,
+      nama: user.user_metadata?.nama || user.email?.split('@')[0] || 'Pengguna',
+      email: user.email || '',
+      role: 'pelanggan',
+      no_hp: user.user_metadata?.no_hp || null,
+      alamat: user.user_metadata?.alamat || null,
+    } as User;
   }
 
   return userData as User;
