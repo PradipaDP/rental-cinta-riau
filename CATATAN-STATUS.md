@@ -41,3 +41,35 @@ Penyelarasan Skema & Opsi: Sinkronisasi total pilihan formulir (transmisi Manual
 File Dibuat/Diubah: src/app/actions/admin-kendaraan.ts dan src/app/admin/kendaraan/KendaraanClient.tsx.
 
 Pengujian Checklist: Lulus 100% (Tambah kendaraan baru dengan 8 variabel skripsi, upload foto, validasi plat nomor unik, ubah data & fitur, toggle status cepat, serta hapus tuntas beserta file storage).
+
+
+Ringkasan Status Tahap 6
+Landing Page Publik (/)
+
+Berfungsi sebagai gerbang utama saat aplikasi diakses pertama kali (npm run dev).
+
+Menampilkan informasi profil perusahaan, alur pemesanan, serta katalog kendaraan unggulan bagi pengunjung umum.
+
+Dilengkapi tombol navigasi Masuk dan Daftar di bilah atas (header).
+
+Sistem Autentikasi & Registrasi (/login, /register)
+
+Berhasil terintegrasi dengan Supabase Auth dan tabel basis data public.users.
+
+Pendaftaran akun baru otomatis mencatat data profil lengkap (nama, email, no HP, alamat) dengan role default sebagai pelanggan.
+
+Manajemen Role & Pembagian Rute (Middleware)
+
+Middleware dan fungsi wajibRole bekerja optimal mengamankan rute berdasarkan hak akses:
+
+Pelanggan diarahkan ke /pencarian-pintar.
+
+Admin diarahkan ke /admin.
+
+Super Admin diarahkan ke /super-admin.
+
+Staf diarahkan ke /staf.
+
+Manajemen Sesi & Tombol Keluar (Logout)
+
+Penanganan fallback sesi pengguna sudah diperbaiki agar tombol Keluar (Logout) muncul dengan sempurna pada header halaman pelanggan setelah berhasil masuk.
