@@ -7,7 +7,7 @@ export type UserPreferences = {
   bahan_bakar: string;
   transmisi: string;
   rute_peruntukan: string;
-  tahun_kendaraan: number;
+  tahun_kendaraan: number; // Tetap diterima dari form input, tetapi tidak dimasukkan ke vektor
   harga_sewa: number;
   fitur_tambahan: string[];
 };
@@ -23,21 +23,16 @@ export function hitungRentangNormalisasi(semuaKendaraan: Kendaraan[]) {
   if (semuaKendaraan.length === 0) {
     return {
       kapasitas: { min: 1, max: 10 },
-      tahun: { min: 2000, max: new Date().getFullYear() },
       harga: { min: 100000, max: 2000000 },
     };
   }
 
   let minKapasitas = Infinity, maxKapasitas = -Infinity;
-  let minTahun = Infinity, maxTahun = -Infinity;
   let minHarga = Infinity, maxHarga = -Infinity;
 
   for (const k of semuaKendaraan) {
     if (k.kapasitas < minKapasitas) minKapasitas = k.kapasitas;
     if (k.kapasitas > maxKapasitas) maxKapasitas = k.kapasitas;
-
-    if (k.tahun_kendaraan < minTahun) minTahun = k.tahun_kendaraan;
-    if (k.tahun_kendaraan > maxTahun) maxTahun = k.tahun_kendaraan;
 
     if (k.harga_sewa < minHarga) minHarga = k.harga_sewa;
     if (k.harga_sewa > maxHarga) maxHarga = k.harga_sewa;
@@ -45,7 +40,6 @@ export function hitungRentangNormalisasi(semuaKendaraan: Kendaraan[]) {
 
   return {
     kapasitas: { min: minKapasitas, max: maxKapasitas === minKapasitas ? minKapasitas + 1 : maxKapasitas },
-    tahun: { min: minTahun, max: maxTahun === minTahun ? minTahun + 1 : maxTahun },
     harga: { min: minHarga, max: maxHarga === minHarga ? minHarga + 1 : maxHarga },
   };
 }
@@ -77,17 +71,14 @@ export function ubahKendaraanKeVektor(k: Kendaraan, rentang: ReturnType<typeof h
   } else if (k.rute_peruntukan === 'luar_kota') {
     vektor.push(0, 1);
   } else {
-    // 'keduanya'
+    // 'keduanya' menyalakan kedua dimensi
     vektor.push(1, 1);
   }
 
-  // 6. Tahun Kendaraan (Min-Max)
-  vektor.push(normalisasiMinMax(k.tahun_kendaraan, rentang.tahun.min, rentang.tahun.max));
-
-  // 7. Harga Sewa (Min-Max)
+  // 6. Harga Sewa (Min-Max)
   vektor.push(normalisasiMinMax(k.harga_sewa, rentang.harga.min, rentang.harga.max));
 
-  // 8. Fitur Tambahan (Multi-Hot terhadap FITUR_OPTIONS)
+  // 7. Fitur Tambahan (Multi-Hot terhadap FITUR_OPTIONS)
   const fiturMobil = Array.isArray(k.fitur_tambahan) ? k.fitur_tambahan : [];
   for (const fitur of FITUR_OPTIONS) {
     vektor.push(fiturMobil.includes(fitur) ? 1 : 0);
@@ -126,13 +117,10 @@ export function ubahPreferensiKeVektor(pref: UserPreferences, rentang: ReturnTyp
     vektor.push(1, 1);
   }
 
-  // 6. Tahun Kendaraan
-  vektor.push(normalisasiMinMax(pref.tahun_kendaraan, rentang.tahun.min, rentang.tahun.max));
-
-  // 7. Harga Sewa
+  // 6. Harga Sewa
   vektor.push(normalisasiMinMax(pref.harga_sewa, rentang.harga.min, rentang.harga.max));
 
-  // 8. Fitur Tambahan
+  // 7. Fitur Tambahan
   const fiturPref = Array.isArray(pref.fitur_tambahan) ? pref.fitur_tambahan : [];
   for (const fitur of FITUR_OPTIONS) {
     vektor.push(fiturPref.includes(fitur) ? 1 : 0);

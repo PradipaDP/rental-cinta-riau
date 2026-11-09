@@ -1,4 +1,56 @@
-# SNAPSHOT PROYEK rental-cinta-riau (2026-11-04 14:31)
+# SNAPSHOT PROYEK rental-cinta-riau (2026-11-07 15:01)
+
+Jumlah file dalam snapshot: 47
+TIDAK termasuk: node_modules, .next, .env.local (rahasia), package-lock.json, gambar/aset di folder public.
+
+## Daftar file yang ada di snapshot
+- CATATAN-STATUS.md
+- cbf.test.ts
+- eslint.config.mjs
+- next.config.ts
+- package.json
+- README.md
+- src\app\(pelanggan)\layout.tsx
+- src\app\(pelanggan)\mobil\[id_kendaraan]\page.tsx
+- src\app\(pelanggan)\pencarian-pintar\page.tsx
+- src\app\(pelanggan)\pencarian-pintar\PencarianPintarClient.tsx
+- src\app\(publik)\login\page.tsx
+- src\app\(publik)\register\page.tsx
+- src\app\actions\admin-kendaraan.ts
+- src\app\actions\auth.ts
+- src\app\actions\cbf-action.ts
+- src\app\actions\publik-kendaraan.ts
+- src\app\actions\super-admin.ts
+- src\app\admin\kendaraan\KendaraanClient.tsx
+- src\app\admin\kendaraan\page.tsx
+- src\app\admin\layout.tsx
+- src\app\admin\page.tsx
+- src\app\akses-ditolak\page.tsx
+- src\app\globals.css
+- src\app\layout.tsx
+- src\app\page.tsx
+- src\app\staf\layout.tsx
+- src\app\staf\page.tsx
+- src\app\super-admin\layout.tsx
+- src\app\super-admin\page.tsx
+- src\app\super-admin\UserManagementClient.tsx
+- src\components\kendaraan\CarCard.tsx
+- src\components\layout\DashboardLayout.tsx
+- src\components\layout\Footer.tsx
+- src\lib\auth.ts
+- src\lib\cbf\cosine.ts
+- src\lib\cbf\rekomendasi.ts
+- src\lib\cbf\vektorisasi.ts
+- src\lib\config.ts
+- src\lib\formatters.ts
+- src\lib\supabase\admin.ts
+- src\lib\supabase\client.ts
+- src\lib\supabase\server.ts
+- src\lib\validations.ts
+- src\middleware.ts
+- src\types\index.ts
+- tsconfig.json
+- vite.config.ts
 
 ## Struktur folder src
 ```
@@ -22,6 +74,7 @@ D:\SKRIPSI\RENTAL-CINTA-RIAU\RENTAL-CINTA-RIAU\SRC
 |   |   |           
 |   |   \---pencarian-pintar
 |   |           page.tsx
+|   |           PencarianPintarClient.tsx
 |   |           
 |   +---(publik)
 |   |   +---login
@@ -33,6 +86,7 @@ D:\SKRIPSI\RENTAL-CINTA-RIAU\RENTAL-CINTA-RIAU\SRC
 |   +---actions
 |   |       admin-kendaraan.ts
 |   |       auth.ts
+|   |       cbf-action.ts
 |   |       publik-kendaraan.ts
 |   |       super-admin.ts
 |   |       
@@ -74,6 +128,10 @@ D:\SKRIPSI\RENTAL-CINTA-RIAU\RENTAL-CINTA-RIAU\SRC
 |   |   validations.ts
 |   |   
 |   +---cbf
+|   |       cosine.ts
+|   |       rekomendasi.ts
+|   |       vektorisasi.ts
+|   |       
 |   +---export
 |   +---midtrans
 |   \---supabase
@@ -84,6 +142,183 @@ D:\SKRIPSI\RENTAL-CINTA-RIAU\RENTAL-CINTA-RIAU\SRC
 \---types
         index.ts
         
+```
+
+### FILE: CATATAN-STATUS.md
+```md
+Tahap Selesai: Tahap 1 (Setup Next.js) dan Tahap 2 (Database Supabase).
+
+Struktur Folder Terkini: Kerangka awal Next.js dan konfigurasi file .env.local.example sudah siap di lokal.
+
+Environment: Variabel Supabase dan Midtrans siap untuk diisi.
+
+Database: Skema 4 tabel, constraint double-booking, trigger auth otomatis, dan Row Level Security (RLS) sudah diuji dan berjalan sempurna.
+
+Masalah Belum Selesai: Tidak ada.
+
+Tahap Berikutnya: Tahap 3: Konfigurasi Supabase Client (SSR) di Next.js, pembuatan Halaman Autentikasi, dan Middleware proteksi Route.
+
+RINGKASAN STATUS:
+
+Tahap Selesai: Tahap 1, 2, dan 3.
+
+Struktur Folder: Sudah bersih dan sesuai rute Master Brief.
+
+Environment: Berhasil terhubung ke Supabase.
+
+Tahap Berikutnya: Tahap 4 (Manajemen Kendaraan dan Fitur Admin).
+
+
+Fitur Utama Selesai: Antarmuka Manajemen Pengguna khusus Super Admin dengan tabel dinamis (pencarian, filter role, dan paginasi).
+
+Keamanan & Server Actions: Integrasi klien service_role Supabase untuk mendaftarkan akun internal (tanpa repot konfirmasi email manual), dan memblokir akses login melalui ban_duration di lapisan Auth. Validasi server sukses mencegah Super Admin mendemosi atau memblokir dirinya sendiri.
+
+Perbaikan Skema: Penyelarasan Primary Key dari id menjadi id_user sukses diterapkan pada seluruh operasi CRUD untuk sinkronisasi sempurna antara auth.users dan public.users.
+
+File Dibuat/Diubah: src/lib/supabase/admin.ts, src/app/actions/super-admin.ts, src/app/super-admin/UserManagementClient.tsx, dan src/app/super-admin/page.tsx.
+
+Pengujian Checklist: Lulus 100% (Tambah akun, hapus tuntas, ubah role, dan notifikasi blokir login).
+
+Ringkasan Status: Tahap 5 Selesai (Manajemen Kendaraan Admin)
+Fitur Utama Selesai: Antarmuka Manajemen Kendaraan khusus Admin/Super Admin dengan tabel dinamis (pencarian teks, filter jenis kendaraan Hatchback/SUV/MPV, filter status ketersediaan, paginasi, dan pratinjau gambar).
+
+Keamanan & Server Actions: Integrasi penuh pada admin-kendaraan.ts dengan validasi Zod yang ketat, pengelolaan Supabase Storage untuk upload foto kendaraan maksimal 2 MB, serta penanganan error kode database secara aman.
+
+Penyelarasan Skema & Opsi: Sinkronisasi total pilihan formulir (transmisi Manual/Matic, bahan bakar Bensin/Diesel/Hybrid/Listrik, serta rute peruntukan Dalam Kota / Luar Kota / Keduanya) agar selaras 100% dengan struktur tabel database Supabase.
+
+File Dibuat/Diubah: src/app/actions/admin-kendaraan.ts dan src/app/admin/kendaraan/KendaraanClient.tsx.
+
+Pengujian Checklist: Lulus 100% (Tambah kendaraan baru dengan 8 variabel skripsi, upload foto, validasi plat nomor unik, ubah data & fitur, toggle status cepat, serta hapus tuntas beserta file storage).
+
+
+Ringkasan Status Tahap 6
+Landing Page Publik (/)
+
+Berfungsi sebagai gerbang utama saat aplikasi diakses pertama kali (npm run dev).
+
+Menampilkan informasi profil perusahaan, alur pemesanan, serta katalog kendaraan unggulan bagi pengunjung umum.
+
+Dilengkapi tombol navigasi Masuk dan Daftar di bilah atas (header).
+
+Sistem Autentikasi & Registrasi (/login, /register)
+
+Berhasil terintegrasi dengan Supabase Auth dan tabel basis data public.users.
+
+Pendaftaran akun baru otomatis mencatat data profil lengkap (nama, email, no HP, alamat) dengan role default sebagai pelanggan.
+
+Manajemen Role & Pembagian Rute (Middleware)
+
+Middleware dan fungsi wajibRole bekerja optimal mengamankan rute berdasarkan hak akses:
+
+Pelanggan diarahkan ke /pencarian-pintar.
+
+Admin diarahkan ke /admin.
+
+Super Admin diarahkan ke /super-admin.
+
+Staf diarahkan ke /staf.
+
+Manajemen Sesi & Tombol Keluar (Logout)
+
+Penanganan fallback sesi pengguna sudah diperbaiki agar tombol Keluar (Logout) muncul dengan sempurna pada header halaman pelanggan setelah berhasil masuk.
+```
+
+### FILE: cbf.test.ts
+```ts
+import { describe, it, expect } from 'vitest';
+import { hitungCosineSimilarity } from './src/lib/cbf/cosine';
+import { hitungRentangNormalisasi, ubahKendaraanKeVektor, ubahPreferensiKeVektor } from './src/lib/cbf/vektorisasi';
+import { Kendaraan } from './src/types';
+
+describe('Pengujian Algoritma Content-Based Filtering (CBF)', () => {
+  const mockKendaraan: Kendaraan[] = [
+    {
+      id_kendaraan: '1',
+      nama_kendaraan: 'Avanza',
+      jenis_kendaraan: 'MPV',
+      plat_nomor: 'BM 1234 AA',
+      harga_sewa: 300000,
+      tahun_kendaraan: 2022,
+      bahan_bakar: 'Bensin',
+      transmisi: 'Manual',
+      rute_peruntukan: 'dalam_kota',
+      kapasitas: 7,
+      fitur_tambahan: ['AC', 'Bluetooth'],
+      foto_url: null,
+      status: 'tersedia',
+    },
+    {
+      id_kendaraan: '2',
+      nama_kendaraan: 'Alphard',
+      jenis_kendaraan: 'SUV',
+      plat_nomor: 'BM 5678 BB',
+      harga_sewa: 1500000,
+      tahun_kendaraan: 2024,
+      bahan_bakar: 'Hybrid',
+      transmisi: 'Matic',
+      rute_peruntukan: 'keduanya',
+      kapasitas: 7,
+      fitur_tambahan: ['AC', 'Bluetooth', 'Sunroof'],
+      foto_url: null,
+      status: 'disewa',
+    },
+  ];
+
+  const rentang = hitungRentangNormalisasi(mockKendaraan);
+
+  it('Kasus 1: Vektor identik menghasilkan kemiripan 100% (1.0)', () => {
+    const v1 = [1, 0, 0.5, 1];
+    const skor = hitungCosineSimilarity(v1, v1);
+    expect(skor).toBe(1.0);
+  });
+
+  it('Kasus 2: Preferensi sangat berbeda menghasilkan skor rendah mendekati 0', () => {
+    const v1 = [1, 0, 0, 0];
+    const v2 = [0, 1, 1, 1];
+    const skor = hitungCosineSimilarity(v1, v2);
+    expect(skor).toBe(0);
+  });
+
+  it('Kasus 3: Vektor nol (kosong) tidak menyebabkan error dan menghasilkan skor 0', () => {
+    const v1 = [0, 0, 0];
+    const v2 = [1, 1, 1];
+    expect(() => hitungCosineSimilarity(v1, v2)).not.toThrow();
+    expect(hitungCosineSimilarity(v1, v2)).toBe(0);
+  });
+
+  it('Kasus 4: Vektor kendaraan terbentuk dengan benar dari 8 variabel', () => {
+    const vKendaraan = ubahKendaraanKeVektor(mockKendaraan[0], rentang);
+    expect(vKendaraan.length).toBeGreaterThan(0);
+  });
+
+  it('Kasus 5: Kendaraan berstatus "disewa" harus diabaikan', () => {
+    const tersedia = mockKendaraan.filter(k => k.status === 'tersedia');
+    expect(tersedia.length).toBe(1);
+    expect(tersedia[0].id_kendaraan).toBe('1');
+  });
+});
+```
+
+### FILE: eslint.config.mjs
+```mjs
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  // Override default ignores of eslint-config-next.
+  globalIgnores([
+    // Default ignores of eslint-config-next:
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+  ]),
+]);
+
+export default eslintConfig;
 ```
 
 ### FILE: next.config.ts
@@ -145,70 +380,109 @@ export default nextConfig;
 }
 ```
 
+### FILE: README.md
+```md
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+
 ### FILE: src\app\(pelanggan)\layout.tsx
 ```tsx
-import { ambilKendaraanTersedia } from '@/app/actions/publik-kendaraan';
-import CarCard from '@/components/kendaraan/CarCard';
-import { Sparkles, Car } from 'lucide-react';
+import Link from 'next/link';
+import { NAMA_PERUSAHAAN } from '@/lib/config';
+import { ambilPenggunaSaatIni } from '@/lib/auth';
 import Footer from '@/components/layout/Footer';
+import { LogOut } from 'lucide-react';
+import { logoutAction } from '@/app/actions/auth';
 
-// Revalidate data per 30 detik untuk halaman Katalog
-export const revalidate = 30;
+export const dynamic = 'force-dynamic';
 
-export default async function PencarianPintarPage() {
-  const semuaMobil = await ambilKendaraanTersedia();
+export default async function PelangganLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const pengguna = await ambilPenggunaSaatIni();
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-4rem)]">
-      
-      {/* 1. KOTAK PLACEHOLDER CBF (Untuk Tahap 7) */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl shadow-lg p-6 md:p-10 mb-10 text-white relative overflow-hidden">
-        <div className="relative z-10 max-w-3xl">
-          <div className="flex items-center space-x-2 mb-3">
-            <Sparkles className="text-yellow-300" size={24} />
-            <h1 className="text-2xl md:text-3xl font-bold">Pencarian Pintar Rekomendasi</h1>
-          </div>
-          <p className="text-blue-100 mb-6">
-            Sistem kami akan mencarikan mobil yang paling cocok untuk Anda berdasarkan 8 variabel preferensi menggunakan algoritma Content-Based Filtering.
-          </p>
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      {/* Header Khusus Pelanggan / Dashboard */}
+      <header className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <Link href="/" className="font-bold text-blue-600 text-xl">
+            {NAMA_PERUSAHAAN}
+          </Link>
           
-          <div className="bg-white/10 border border-white/20 backdrop-blur-sm rounded-xl p-6 text-center border-dashed">
-            <p className="text-sm font-medium uppercase tracking-wider text-blue-200">
-              [ KOMPONEN FORM CBF AKAN DIISI DI TAHAP 7 ]
-            </p>
+          <div className="flex items-center space-x-4">
+            {pengguna ? (
+              <div className="flex items-center space-x-3">
+                <span className="text-sm font-medium text-gray-700 hidden sm:inline-block">
+                  Halo, {pengguna.nama}
+                </span>
+                <form action={logoutAction}>
+                  <button 
+                    type="submit" 
+                    className="flex items-center text-sm font-medium bg-red-50 text-red-600 px-3 py-2 rounded-lg hover:bg-red-100 transition"
+                  >
+                    <LogOut size={16} className="mr-1.5" />
+                    Keluar
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-blue-600 px-3 py-2">
+                  Masuk
+                </Link>
+                <Link href="/register" className="text-sm font-medium bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                  Daftar
+                </Link>
+              </div>
+            )}
           </div>
         </div>
-        {/* Dekorasi */}
-        <Car size={200} className="absolute -bottom-10 -right-10 text-white opacity-10" />
-      </div>
+      </header>
 
-      {/* 2. DAFTAR SEMUA KATALOG KENDARAAN */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Katalog Semua Kendaraan</h2>
-        <p className="text-gray-500 mt-1">Daftar armada yang tersedia saat ini untuk disewa.</p>
-      </div>
+      {/* Konten Utama */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {children}
+      </main>
 
-      <div className="flex-1 mb-16">
-        {semuaMobil.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center shadow-sm">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Car className="text-gray-400" size={32} />
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-1">Tidak ada armada</h3>
-            <p className="text-gray-500 text-sm">Mohon maaf, saat ini tidak ada kendaraan yang tersedia.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {semuaMobil.map(mobil => (
-              <CarCard key={mobil.id_kendaraan} mobil={mobil} />
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="-mx-4 md:-mx-6 lg:-mx-8">
-        <Footer />
-      </div>
+      <Footer />
     </div>
   );
 }
@@ -222,20 +496,17 @@ import { ambilDetailKendaraan } from '@/app/actions/publik-kendaraan';
 import { ambilPenggunaSaatIni } from '@/lib/auth';
 import { formatRupiah } from '@/lib/formatters';
 import { NAMA_PERUSAHAAN } from '@/lib/config';
-import Footer from '@/components/layout/Footer';
 import { 
   Image as ImageIcon, CheckCircle2, XCircle, ArrowLeft, 
-  Car, Users, Fuel, Gauge, Map, Calendar, Settings, ShieldCheck 
+  Car, Users, Fuel, Gauge, Calendar, Settings, ShieldCheck 
 } from 'lucide-react';
 
 // Fungsi penyamar Plat Nomor
 function samarkanPlat(plat: string) {
   const parts = plat.trim().split(' ');
-  // Jika format BM 1234 AB -> BM 1234 **
   if (parts.length === 3) {
     return `${parts[0]} ${parts[1]} **`;
   }
-  // Fallback sederhana jika format berbeda
   return plat.slice(0, -2) + '**';
 }
 
@@ -246,36 +517,32 @@ function formatRute(rute: string) {
   return rute;
 }
 
-// Mendefinisikan tipe untuk Props halaman dinamis Next.js
 type Props = {
   params: Promise<{ id_kendaraan: string }>;
 };
 
 export default async function DetailMobilPage({ params }: Props) {
-  // Await params untuk keamanan di Next.js 15+ 
   const resolvedParams = await params;
   const id_kendaraan = resolvedParams.id_kendaraan;
   
   const mobil = await ambilDetailKendaraan(id_kendaraan);
   if (!mobil) return notFound();
 
-  // Cek apakah user login untuk tombol Pesan
   const pengguna = await ambilPenggunaSaatIni();
   
-  // Rute tombol Pesan
   const rutePemesanan = pengguna 
     ? `/transaksi/${id_kendaraan}` 
     : `/login?next=/mobil/${id_kendaraan}`;
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-4rem)]">
+    <div className="flex flex-col min-h-[calc(100vh-4rem)] pb-12">
       <div className="mb-6">
         <Link href="/pencarian-pintar" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 transition">
           <ArrowLeft size={16} className="mr-1" /> Kembali ke Katalog
         </Link>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-12">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6">
         <div className="grid grid-cols-1 lg:grid-cols-2">
           {/* Sisi Kiri: Foto */}
           <div className="bg-gray-50 border-r border-gray-200 p-8 flex items-center justify-center min-h-[300px] lg:min-h-[500px]">
@@ -353,7 +620,7 @@ export default async function DetailMobilPage({ params }: Props) {
               </div>
             </div>
 
-            {/* Fitur Tambahan (Variabel 8) */}
+            {/* Fitur Tambahan */}
             <h3 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wider flex items-center">
               <Settings size={16} className="mr-2" /> Fitur Tambahan
             </h3>
@@ -397,10 +664,7 @@ export default async function DetailMobilPage({ params }: Props) {
           </div>
         </div>
       </div>
-
-      <div className="-mx-4 md:-mx-6 lg:-mx-8">
-        <Footer />
-      </div>
+      {/* Catatan: Footer dibungkus oleh layout pelanggan, jadi tidak perlu dipanggil manual di sini */}
     </div>
   );
 }
@@ -408,11 +672,207 @@ export default async function DetailMobilPage({ params }: Props) {
 
 ### FILE: src\app\(pelanggan)\pencarian-pintar\page.tsx
 ```tsx
-export default function PencarianPintarPage() {
+import { ambilKendaraanTersedia } from '@/app/actions/publik-kendaraan';
+import PencarianPintarClient from './PencarianPintarClient';
+
+export const dynamic = 'force-dynamic';
+
+export default async function PencarianPintarPage() {
+  const semuaMobil = await ambilKendaraanTersedia();
+
+  return <PencarianPintarClient semuaKatalog={semuaMobil} />;
+}
+```
+
+### FILE: src\app\(pelanggan)\pencarian-pintar\PencarianPintarClient.tsx
+```tsx
+'use client';
+
+import { useActionState } from 'react';
+import { prosesPencarianPintar } from '@/app/actions/cbf-action';
+import { HasilRekomendasi } from '@/lib/cbf/rekomendasi';
+import { KATEGORI_OPTIONS, BAHAN_BAKAR_OPTIONS, TRANSMISI_OPTIONS, FITUR_OPTIONS } from '@/lib/config';
+import { Kendaraan } from '@/types';
+import CarCard from '@/components/kendaraan/CarCard';
+import { Sparkles, Search, SlidersHorizontal, CheckCircle } from 'lucide-react';
+
+export default function PencarianPintarClient({ semuaKatalog }: { semuaKatalog: Kendaraan[] }) {
+  // Inisialisasi lengkap dengan properti success, rekomendasi, dan error
+  const [state, formAction, isPending] = useActionState(prosesPencarianPintar, {
+    success: false,
+    rekomendasi: [],
+    error: null,
+  });
+
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Pencarian Pintar (Rekomendasi CBF)</h1>
-      <p className="text-gray-500">Form input 8 variabel preferensi kendaraan akan berada di sini.</p>
+    <div className="space-y-12">
+      {/* 1. Header Hero */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl shadow-lg p-6 md:p-10 text-white relative overflow-hidden">
+        <div className="relative z-10 max-w-3xl">
+          <div className="flex items-center space-x-2 mb-3">
+            <Sparkles className="text-yellow-300" size={24} />
+            <h1 className="text-2xl md:text-3xl font-bold">Pencarian Pintar (Content-Based Filtering)</h1>
+          </div>
+          <p className="text-blue-100 mb-2">
+            Masukkan kriteria preferensi kendaraan impian Anda. Sistem kami akan menghitung tingkat kemiripan menggunakan Cosine Similarity dari 8 variabel spesifikasi.
+          </p>
+        </div>
+      </div>
+
+      {/* 2. Form Input 8 Variabel */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8">
+        <div className="flex items-center space-x-2 mb-6 border-b pb-4">
+          <SlidersHorizontal className="text-blue-600" size={20} />
+          <h2 className="text-lg font-bold text-gray-900">Formulir Preferensi Kendaraan</h2>
+        </div>
+
+        {state?.error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 text-sm p-4 rounded-xl mb-6 font-medium">
+            {state.error}
+          </div>
+        )}
+
+        <form action={formAction} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Kategori */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Kategori Kendaraan</label>
+              <select name="jenis_kendaraan" required className="w-full border border-gray-300 rounded-lg p-2.5 bg-white text-sm outline-none focus:border-blue-500">
+                <option value="">Pilih Kategori</option>
+                {KATEGORI_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              </select>
+            </div>
+
+            {/* Kapasitas */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Kapasitas (Orang)</label>
+              <input type="number" name="kapasitas" min={1} required placeholder="Contoh: 7" className="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none focus:border-blue-500" />
+            </div>
+
+            {/* Bahan Bakar */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Bahan Bakar</label>
+              <select name="bahan_bakar" required className="w-full border border-gray-300 rounded-lg p-2.5 bg-white text-sm outline-none focus:border-blue-500">
+                <option value="">Pilih Bahan Bakar</option>
+                {BAHAN_BAKAR_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              </select>
+            </div>
+
+            {/* Transmisi */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Transmisi</label>
+              <select name="transmisi" required className="w-full border border-gray-300 rounded-lg p-2.5 bg-white text-sm outline-none focus:border-blue-500">
+                <option value="">Pilih Transmisi</option>
+                {TRANSMISI_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              </select>
+            </div>
+
+            {/* Rute Peruntukan */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Rute Peruntukan</label>
+              <select name="rute_peruntukan" required className="w-full border border-gray-300 rounded-lg p-2.5 bg-white text-sm outline-none focus:border-blue-500">
+                <option value="">Pilih Rute</option>
+                <option value="dalam_kota">Dalam Kota</option>
+                <option value="luar_kota">Luar Kota</option>
+                <option value="keduanya">Dalam & Luar Kota (Keduanya)</option>
+              </select>
+            </div>
+
+            {/* Tahun Kendaraan */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tahun Kendaraan Minimal</label>
+              <input type="number" name="tahun_kendaraan" min={1990} max={new Date().getFullYear() + 1} required placeholder="Contoh: 2022" className="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none focus:border-blue-500" />
+            </div>
+
+            {/* Harga Sewa */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Maksimal Harga Sewa / Hari (Rp)</label>
+              <input type="number" name="harga_sewa" min={10000} required placeholder="Contoh: 500000" className="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none focus:border-blue-500" />
+            </div>
+          </div>
+
+          {/* Fitur Tambahan (Checkbox) */}
+          <div className="pt-4 border-t border-gray-100">
+            <label className="block text-sm font-medium text-gray-700 mb-3">Fitur Tambahan (Boleh pilih lebih dari satu)</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {FITUR_OPTIONS.map(fitur => (
+                <label key={fitur} className="flex items-center space-x-2 text-sm text-gray-700 bg-gray-50 p-2.5 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100 transition">
+                  <input type="checkbox" name="fitur_tambahan" value={fitur} className="rounded text-blue-600 focus:ring-blue-500" />
+                  <span>{fitur}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-4 flex justify-end">
+            <button 
+              type="submit" 
+              disabled={isPending}
+              className="flex items-center px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-200 transition disabled:bg-blue-400"
+            >
+              <Search size={18} className="mr-2" />
+              {isPending ? 'Menghitung Rekomendasi...' : 'Cari Rekomendasi Pintar'}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* 3. Hasil Rekomendasi Terurut */}
+      {state?.success && state.rekomendasi.length > 0 && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between border-b pb-4">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Daftar Rekomendasi Terurut (Top-N)</h2>
+              <p className="text-gray-500 text-sm mt-1">Hasil perhitungan Cosine Similarity diurutkan dari tingkat kecocokan tertinggi.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {state.rekomendasi.map((item: HasilRekomendasi, index: number) => (
+              <div key={item.kendaraan.id_kendaraan} className="relative flex flex-col">
+                {/* Badge Peringkat & Skor Kecocokan */}
+                <div className="absolute top-3 left-3 z-20 flex items-center space-x-1.5">
+                  <span className="bg-blue-600 text-white text-xs font-extrabold px-3 py-1 rounded-full shadow-md">
+                    #{index + 1} Peringkat
+                  </span>
+                  <span className="bg-emerald-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md flex items-center">
+                    <CheckCircle size={12} className="mr-1" /> {item.persentase_kecocokan}% Cocok
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <CarCard mobil={item.kendaraan} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {state?.success && state.rekomendasi.length === 0 && (
+        <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-12 text-center shadow-sm">
+          <p className="text-gray-600 font-medium">Mohon maaf, tidak ada kendaraan tersedia yang cocok dengan kriteria Anda saat ini.</p>
+        </div>
+      )}
+
+      {/* 4. Katalog Semua Kendaraan */}
+      <div className="space-y-6 pt-8 border-t border-gray-200">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Katalog Semua Kendaraan Tersedia</h2>
+          <p className="text-gray-500 text-sm mt-1">Jelajahi seluruh armada yang siap disewa.</p>
+        </div>
+
+        {semuaKatalog.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center shadow-sm">
+            <p className="text-gray-500 text-sm">Tidak ada kendaraan yang tersedia saat ini.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {semuaKatalog.map(mobil => (
+              <CarCard key={mobil.id_kendaraan} mobil={mobil} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -876,6 +1336,59 @@ export async function logoutAction() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect('/login');
+}
+```
+
+### FILE: src\app\actions\cbf-action.ts
+```ts
+'use server';
+
+import { z } from 'zod';
+import { ambilRekomendasiCBF, HasilRekomendasi } from '@/lib/cbf/rekomendasi';
+import { UserPreferences } from '@/lib/cbf/vektorisasi';
+
+const cbfSchema = z.object({
+  jenis_kendaraan: z.string().min(1, 'Kategori kendaraan wajib dipilih.'),
+  kapasitas: z.coerce.number().positive('Kapasitas minimal 1 orang.'),
+  bahan_bakar: z.string().min(1, 'Bahan bakar wajib dipilih.'),
+  transmisi: z.string().min(1, 'Transmisi wajib dipilih.'),
+  rute_peruntukan: z.string().min(1, 'Rute peruntukan wajib dipilih.'),
+  tahun_kendaraan: z.coerce.number().min(1990, 'Tahun kendaraan minimal 1990.'),
+  harga_sewa: z.coerce.number().positive('Harga sewa harus bernilai positif.'),
+  fitur_tambahan: z.array(z.string()).optional(),
+});
+
+export type CBFState = {
+  success: boolean;
+  rekomendasi: HasilRekomendasi[];
+  error: string | null;
+};
+
+export async function prosesPencarianPintar(prevState: CBFState, formData: FormData): Promise<CBFState> {
+  const fiturDipilih = formData.getAll('fitur_tambahan') as string[];
+  
+  const rawData = {
+    jenis_kendaraan: formData.get('jenis_kendaraan'),
+    kapasitas: formData.get('kapasitas'),
+    bahan_bakar: formData.get('bahan_bakar'),
+    transmisi: formData.get('transmisi'),
+    rute_peruntukan: formData.get('rute_peruntukan'),
+    tahun_kendaraan: formData.get('tahun_kendaraan'),
+    harga_sewa: formData.get('harga_sewa'),
+    fitur_tambahan: fiturDipilih,
+  };
+
+  const validasi = cbfSchema.safeParse(rawData);
+  if (!validasi.success) {
+    return { success: false, rekomendasi: [], error: validasi.error.issues[0].message };
+  }
+
+  try {
+    const hasil = await ambilRekomendasiCBF(validasi.data as UserPreferences);
+    return { success: true, rekomendasi: hasil, error: null };
+  } catch (err: any) {
+    return { success: false, rekomendasi: [], error: 'Terjadi kesalahan sistem saat menghitung rekomendasi: ' + err.message };
+  }
 }
 ```
 
@@ -1547,14 +2060,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Create Next App",
-  description: "Generated by create next app",
+  title: "PT Cinta Riau Tour & Travel",
+  description: "Sistem Penyewaan Kendaraan & Pencarian Pintar",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html
-      lang="en"
+      lang="id"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
@@ -2406,6 +2923,230 @@ export async function wajibRole(rolesDiizinkan: Role[]) {
 }
 ```
 
+### FILE: src\lib\cbf\cosine.ts
+```ts
+export function hitungCosineSimilarity(vektorA: number[], vektorB: number[]): number {
+  if (vektorA.length !== vektorB.length || vektorA.length === 0) return 0;
+
+  let dotProduct = 0;
+  let normaA_sq = 0;
+  let normaB_sq = 0;
+
+  for (let i = 0; i < vektorA.length; i++) {
+    dotProduct += vektorA[i] * vektorB[i];
+    normaA_sq += vektorA[i] * vektorA[i];
+    normaB_sq += vektorB[i] * vektorB[i];
+  }
+
+  // Aman terhadap vektor nol (jika salah satu norma bernilai 0)
+  if (normaA_sq === 0 || normaB_sq === 0) {
+    return 0;
+  }
+
+  const similarity = dotProduct / (Math.sqrt(normaA_sq) * Math.sqrt(normaB_sq));
+  
+  // Bulatkan atau pastikan dalam rentang [0, 1]
+  return Math.max(0, Math.min(1, similarity));
+}
+```
+
+### FILE: src\lib\cbf\rekomendasi.ts
+```ts
+'use server';
+
+import { createClient } from '@/lib/supabase/server';
+import { Kendaraan } from '@/types';
+import { TOP_N_REKOMENDASI } from '@/lib/config';
+import { UserPreferences, hitungRentangNormalisasi, ubahKendaraanKeVektor, ubahPreferensiKeVektor } from './vektorisasi';
+import { hitungCosineSimilarity } from './cosine';
+
+export type HasilRekomendasi = {
+  kendaraan: Kendaraan;
+  skor_similarity: number;
+  persentase_kecocokan: number;
+};
+
+export async function ambilRekomendasiCBF(pref: UserPreferences): Promise<HasilRekomendasi[]> {
+  const supabase = await createClient();
+
+  // Hanya ambil kendaraan dengan status 'tersedia' (kendaraan disewa tidak pernah muncul)
+  const { data: semuaTersedia, error } = await supabase
+    .from('kendaraan')
+    .select('*')
+    .eq('status', 'tersedia');
+
+  if (error || !semuaTersedia || semuaTersedia.length === 0) {
+    return [];
+  }
+
+  const rentang = hitungRentangNormalisasi(semuaTersedia as Kendaraan[]);
+  const vektorPreferensi = ubahPreferensiKeVektor(pref, rentang);
+
+  const hasil: HasilRekomendasi[] = semuaTersedia.map((k) => {
+    const vektorKendaraan = ubahKendaraanKeVektor(k as Kendaraan, rentang);
+    const skor = hitungCosineSimilarity(vektorPreferensi, vektorKendaraan);
+    
+    return {
+      kendaraan: k as Kendaraan,
+      skor_similarity: skor,
+      persentase_kecocokan: Number((skor * 100).toFixed(1)),
+    };
+  });
+
+  // Urutkan dari skor terbesar ke terkecil
+  hasil.sort((a, b) => b.skor_similarity - a.skor_similarity);
+
+  // Ambil Top-N
+  return hasil.slice(0, TOP_N_REKOMENDASI);
+}
+```
+
+### FILE: src\lib\cbf\vektorisasi.ts
+```ts
+import { Kendaraan } from '@/types';
+import { KATEGORI_OPTIONS, BAHAN_BAKAR_OPTIONS, TRANSMISI_OPTIONS, FITUR_OPTIONS } from '@/lib/config';
+
+export type UserPreferences = {
+  jenis_kendaraan: string;
+  kapasitas: number;
+  bahan_bakar: string;
+  transmisi: string;
+  rute_peruntukan: string;
+  tahun_kendaraan: number;
+  harga_sewa: number;
+  fitur_tambahan: string[];
+};
+
+export function normalisasiMinMax(val: number, min: number, max: number): number {
+  if (max === min) return 0;
+  const hasil = (val - min) / (max - min);
+  return Math.max(0, Math.min(1, hasil));
+}
+
+// Hitung min dan max dari seluruh daftar kendaraan untuk normalisasi
+export function hitungRentangNormalisasi(semuaKendaraan: Kendaraan[]) {
+  if (semuaKendaraan.length === 0) {
+    return {
+      kapasitas: { min: 1, max: 10 },
+      tahun: { min: 2000, max: new Date().getFullYear() },
+      harga: { min: 100000, max: 2000000 },
+    };
+  }
+
+  let minKapasitas = Infinity, maxKapasitas = -Infinity;
+  let minTahun = Infinity, maxTahun = -Infinity;
+  let minHarga = Infinity, maxHarga = -Infinity;
+
+  for (const k of semuaKendaraan) {
+    if (k.kapasitas < minKapasitas) minKapasitas = k.kapasitas;
+    if (k.kapasitas > maxKapasitas) maxKapasitas = k.kapasitas;
+
+    if (k.tahun_kendaraan < minTahun) minTahun = k.tahun_kendaraan;
+    if (k.tahun_kendaraan > maxTahun) maxTahun = k.tahun_kendaraan;
+
+    if (k.harga_sewa < minHarga) minHarga = k.harga_sewa;
+    if (k.harga_sewa > maxHarga) maxHarga = k.harga_sewa;
+  }
+
+  return {
+    kapasitas: { min: minKapasitas, max: maxKapasitas === minKapasitas ? minKapasitas + 1 : maxKapasitas },
+    tahun: { min: minTahun, max: maxTahun === minTahun ? minTahun + 1 : maxTahun },
+    harga: { min: minHarga, max: maxHarga === minHarga ? minHarga + 1 : maxHarga },
+  };
+}
+
+export function ubahKendaraanKeVektor(k: Kendaraan, rentang: ReturnType<typeof hitungRentangNormalisasi>): number[] {
+  const vektor: number[] = [];
+
+  // 1. Kategori (One-Hot)
+  for (const opt of KATEGORI_OPTIONS) {
+    vektor.push(k.jenis_kendaraan === opt ? 1 : 0);
+  }
+
+  // 2. Kapasitas (Min-Max)
+  vektor.push(normalisasiMinMax(k.kapasitas, rentang.kapasitas.min, rentang.kapasitas.max));
+
+  // 3. Bahan Bakar (One-Hot)
+  for (const opt of BAHAN_BAKAR_OPTIONS) {
+    vektor.push(k.bahan_bakar === opt ? 1 : 0);
+  }
+
+  // 4. Transmisi (One-Hot)
+  for (const opt of TRANSMISI_OPTIONS) {
+    vektor.push(k.transmisi === opt ? 1 : 0);
+  }
+
+  // 5. Rute Peruntukan (2 Dimensi: [dalam_kota, luar_kota])
+  if (k.rute_peruntukan === 'dalam_kota') {
+    vektor.push(1, 0);
+  } else if (k.rute_peruntukan === 'luar_kota') {
+    vektor.push(0, 1);
+  } else {
+    // 'keduanya'
+    vektor.push(1, 1);
+  }
+
+  // 6. Tahun Kendaraan (Min-Max)
+  vektor.push(normalisasiMinMax(k.tahun_kendaraan, rentang.tahun.min, rentang.tahun.max));
+
+  // 7. Harga Sewa (Min-Max)
+  vektor.push(normalisasiMinMax(k.harga_sewa, rentang.harga.min, rentang.harga.max));
+
+  // 8. Fitur Tambahan (Multi-Hot terhadap FITUR_OPTIONS)
+  const fiturMobil = Array.isArray(k.fitur_tambahan) ? k.fitur_tambahan : [];
+  for (const fitur of FITUR_OPTIONS) {
+    vektor.push(fiturMobil.includes(fitur) ? 1 : 0);
+  }
+
+  return vektor;
+}
+
+export function ubahPreferensiKeVektor(pref: UserPreferences, rentang: ReturnType<typeof hitungRentangNormalisasi>): number[] {
+  const vektor: number[] = [];
+
+  // 1. Kategori (One-Hot)
+  for (const opt of KATEGORI_OPTIONS) {
+    vektor.push(pref.jenis_kendaraan === opt ? 1 : 0);
+  }
+
+  // 2. Kapasitas (Min-Max)
+  vektor.push(normalisasiMinMax(pref.kapasitas, rentang.kapasitas.min, rentang.kapasitas.max));
+
+  // 3. Bahan Bakar (One-Hot)
+  for (const opt of BAHAN_BAKAR_OPTIONS) {
+    vektor.push(pref.bahan_bakar === opt ? 1 : 0);
+  }
+
+  // 4. Transmisi (One-Hot)
+  for (const opt of TRANSMISI_OPTIONS) {
+    vektor.push(pref.transmisi === opt ? 1 : 0);
+  }
+
+  // 5. Rute Peruntukan
+  if (pref.rute_peruntukan === 'dalam_kota') {
+    vektor.push(1, 0);
+  } else if (pref.rute_peruntukan === 'luar_kota') {
+    vektor.push(0, 1);
+  } else {
+    vektor.push(1, 1);
+  }
+
+  // 6. Tahun Kendaraan
+  vektor.push(normalisasiMinMax(pref.tahun_kendaraan, rentang.tahun.min, rentang.tahun.max));
+
+  // 7. Harga Sewa
+  vektor.push(normalisasiMinMax(pref.harga_sewa, rentang.harga.min, rentang.harga.max));
+
+  // 8. Fitur Tambahan
+  const fiturPref = Array.isArray(pref.fitur_tambahan) ? pref.fitur_tambahan : [];
+  for (const fitur of FITUR_OPTIONS) {
+    vektor.push(fiturPref.includes(fitur) ? 1 : 0);
+  }
+
+  return vektor;
+}
+```
+
 ### FILE: src\lib\config.ts
 ```ts
 // Nilai-nilai ini bisa kamu ubah sesuai kebutuhan skripsi nanti
@@ -2767,4 +3508,18 @@ export interface Transaksi {
   ],
   "exclude": ["node_modules"]
 }
+```
+
+### FILE: vite.config.ts
+```ts
+import { defineConfig } from 'vitest/config';
+import path from 'path';
+
+export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+});
 ```
