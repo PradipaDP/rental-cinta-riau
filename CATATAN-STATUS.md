@@ -87,3 +87,11 @@ Perubahan Database: Tidak ada perubahan struktur/skema, hanya memanfaatkan tabel
 Masalah Belum Selesai: Belum ada pembuatan Token Midtrans dan baris transaksi database (akan dikerjakan di Tahap 9).
 
 Tahap Berikutnya: Tahap 9 (Pembayaran Midtrans Snap & Webhook).
+
+Tahap Selesai: Tahap 1 hingga Tahap 9.
+
+Fitur Baru Aktif: Pembayaran Midtrans Snap (Sandbox), verifikasi Webhook SHA512, pemetaan status transaksi, dan proteksi URL.
+
+Masalah Belum Selesai: Riwayat Pemesanan Pelanggan (Tahap 10).
+
+Tahap Berikutnya: Tahap 10 (Halaman Riwayat Pemesanan Pelanggan).

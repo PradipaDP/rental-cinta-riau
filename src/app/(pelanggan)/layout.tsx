@@ -1,64 +1,52 @@
+import { ReactNode } from 'react';
 import Link from 'next/link';
-import { NAMA_PERUSAHAAN } from '@/lib/config';
-import { ambilPenggunaSaatIni } from '@/lib/auth';
-import Footer from '@/components/layout/Footer';
-import { LogOut } from 'lucide-react';
-import { logoutAction } from '@/app/actions/auth';
+import { LogOut, Car, Clock, User } from 'lucide-react';
+import { createClient } from '@/lib/supabase/server';
 
-export const dynamic = 'force-dynamic';
-
-export default async function PelangganLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const pengguna = await ambilPenggunaSaatIni();
+export default async function PelangganLayout({ children }: { children: ReactNode }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Header Khusus Pelanggan / Dashboard */}
-      <header className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="font-bold text-blue-600 text-xl">
-            {NAMA_PERUSAHAAN}
-          </Link>
-          
-          <div className="flex items-center space-x-4">
-            {pengguna ? (
-              <div className="flex items-center space-x-3">
-                <span className="text-sm font-medium text-gray-700 hidden sm:inline-block">
-                  Halo, {pengguna.nama}
-                </span>
-                <form action={logoutAction}>
-                  <button 
-                    type="submit" 
-                    className="flex items-center text-sm font-medium bg-red-50 text-red-600 px-3 py-2 rounded-lg hover:bg-red-100 transition"
-                  >
-                    <LogOut size={16} className="mr-1.5" />
-                    Keluar
-                  </button>
-                </form>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-2">
-                <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-blue-600 px-3 py-2">
-                  Masuk
-                </Link>
-                <Link href="/register" className="text-sm font-medium bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-                  Daftar
-                </Link>
-              </div>
-            )}
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Navbar Atas */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <Car className="text-blue-600 mr-2" size={28} />
+              <span className="text-xl font-extrabold text-gray-900 tracking-tight">Cinta Riau</span>
+            </div>
+            
+            <nav className="flex items-center space-x-4 md:space-x-8">
+              <Link href="/pencarian-pintar" className="text-gray-600 hover:text-blue-600 font-medium text-sm flex items-center">
+                <Car size={18} className="mr-1.5" /> <span className="hidden sm:inline">Cari Mobil</span>
+              </Link>
+              <Link href="/riwayat" className="text-gray-600 hover:text-blue-600 font-medium text-sm flex items-center">
+                <Clock size={18} className="mr-1.5" /> <span className="hidden sm:inline">Riwayat</span>
+              </Link>
+              <div className="h-6 w-px bg-gray-200 mx-2"></div>
+              <form action="/api/auth/logout" method="POST">
+                <button type="submit" className="text-red-600 hover:text-red-700 font-medium text-sm flex items-center">
+                  <LogOut size={18} className="mr-1.5" /> <span className="hidden sm:inline">Keluar</span>
+                </button>
+              </form>
+            </nav>
           </div>
         </div>
       </header>
 
-      {/* Konten Utama */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Konten Halaman */}
+      <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         {children}
       </main>
 
-      <Footer />
+      {/* Footer Sederhana */}
+      <footer className="bg-white border-t border-gray-200 py-6 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500">
+          &copy; {new Date().getFullYear()} PT Cinta Riau Tour & Travel. All rights reserved.
+        </div>
+      </footer>
     </div>
   );
 }
