@@ -73,3 +73,17 @@ Staf diarahkan ke /staf.
 Manajemen Sesi & Tombol Keluar (Logout)
 
 Penanganan fallback sesi pengguna sudah diperbaiki agar tombol Keluar (Logout) muncul dengan sempurna pada header halaman pelanggan setelah berhasil masuk.
+
+Tahap Selesai: Tahap 1, 2, 3, 4, 5, 6, 7, dan 8.
+
+Struktur Folder Terbaru: src/app/(pelanggan)/transaksi dan folder ringkasan berhasil diintegrasikan.
+
+Variabel Environment (Tanpa Nilai): NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY.
+
+Route Berjalan: /, /login, /register, /super-admin, /admin, /admin/kendaraan, /pencarian-pintar, /mobil/[id], /transaksi/[id], /transaksi/ringkasan/[id].
+
+Perubahan Database: Tidak ada perubahan struktur/skema, hanya memanfaatkan tabel pemesanan dan bucket dokumen-identitas sesuai spesifikasi asli.
+
+Masalah Belum Selesai: Belum ada pembuatan Token Midtrans dan baris transaksi database (akan dikerjakan di Tahap 9).
+
+Tahap Berikutnya: Tahap 9 (Pembayaran Midtrans Snap & Webhook).
