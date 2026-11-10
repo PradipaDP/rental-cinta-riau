@@ -34,12 +34,13 @@ export async function ambilRiwayatPemesanan(page = 1, statusFilter = 'semua') {
     let ktpUrl = null;
     let simUrl = null;
 
-    if (item.foto_ktp) {
-      const { data: ktpData } = await supabase.storage.from('dokumen').createSignedUrl(item.foto_ktp, 3600);
+    // PERBAIKAN: Menggunakan kolom ktp_url dan sim_url, serta bucket dokumen-identitas
+    if (item.ktp_url) {
+      const { data: ktpData } = await supabase.storage.from('dokumen-identitas').createSignedUrl(item.ktp_url, 3600);
       ktpUrl = ktpData?.signedUrl || null;
     }
-    if (item.foto_sim) {
-      const { data: simData } = await supabase.storage.from('dokumen').createSignedUrl(item.foto_sim, 3600);
+    if (item.sim_url) {
+      const { data: simData } = await supabase.storage.from('dokumen-identitas').createSignedUrl(item.sim_url, 3600);
       simUrl = simData?.signedUrl || null;
     }
 

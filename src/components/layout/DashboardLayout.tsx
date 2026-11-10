@@ -7,7 +7,6 @@ import { Menu, X, LogOut, Users, LayoutDashboard, Car, FileText, Activity, Calen
 import { logoutAction } from '@/app/actions/auth';
 import { NAMA_PERUSAHAAN } from '@/lib/config';
 
-// Definisi menu berdasarkan Master Brief
 const superAdminMenus = [
   { label: 'Manajemen Pengguna Aplikasi', href: '/super-admin', icon: Users },
 ];
@@ -23,8 +22,8 @@ const stafMenus = [
   { label: 'Daftar Booking Aktif Hari Ini', href: '/staf', icon: CalendarClock },
   { label: 'Pengecekan Ketersediaan', href: '/staf/ketersediaan', icon: ClipboardCheck },
   { label: 'Transaksi Walk-in', href: '/staf/walk-in', icon: Store },
-  { label: 'Proses Serah Terima', href: '/staf/serah-terima/placeholder', icon: KeyRound },
-  { label: 'Proses Pengembalian', href: '/staf/pengembalian/placeholder', icon: Undo2 },
+  { label: 'Proses Serah Terima', href: '/staf/serah-terima', icon: KeyRound },
+  { label: 'Proses Pengembalian', href: '/staf/pengembalian', icon: Undo2 },
   { label: 'Cetak Dokumen', href: '/staf/cetak/placeholder', icon: Printer },
 ];
 
@@ -36,7 +35,6 @@ export default function DashboardLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
-  // Menentukan menu yang aktif berdasarkan role
   let menuItems: any[] = [];
   if (role === 'super_admin') menuItems = superAdminMenus;
   else if (role === 'admin') menuItems = adminMenus;
@@ -44,7 +42,6 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
-      {/* Sidebar Mobile Overlay */}
       {isMobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
@@ -52,7 +49,6 @@ export default function DashboardLayout({
         />
       )}
 
-      {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 bg-white w-64 shadow-lg transform transition-transform duration-200 ease-in-out z-30 lg:translate-x-0 lg:static lg:inset-auto flex flex-col ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex items-center justify-center h-16 border-b border-gray-200 px-4">
           <span className="font-bold text-blue-600 text-lg text-center leading-tight">
@@ -89,9 +85,7 @@ export default function DashboardLayout({
         </div>
       </aside>
 
-      {/* Konten Utama */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header Atas */}
         <header className="bg-white h-16 shadow-sm flex items-center justify-between px-4 lg:px-8 border-b border-gray-200">
           <button 
             onClick={() => setIsMobileMenuOpen(true)}
@@ -99,7 +93,7 @@ export default function DashboardLayout({
           >
             <Menu size={24} />
           </button>
-          <div className="hidden lg:block" /> {/* Spacer */}
+          <div className="hidden lg:block" />
           
           <div className="flex items-center space-x-3 text-sm">
             <span className="text-gray-500 bg-gray-100 px-2 py-1 rounded-md capitalize font-medium">
@@ -109,7 +103,6 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        {/* Halaman */}
         <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
           {children}
         </main>
