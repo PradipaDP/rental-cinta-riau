@@ -5,18 +5,17 @@ import { useRouter } from 'next/navigation';
 import Script from 'next/script';
 import { formatTanggal, formatRupiah, hitungJumlahHari } from '@/lib/formatters';
 import { batalkanPemesanan } from '@/app/actions/pelanggan-transaksi';
-import { Car, Calendar, MapPin, Search, ExternalLink, CreditCard, Ban, RefreshCw, X, CheckCircle } from 'lucide-react';
+import { Car, Calendar, MapPin, Search, ExternalLink, CreditCard, Ban, RefreshCw, X, CheckCircle, Info } from 'lucide-react';
 
 export default function RiwayatClient({ initialData, filterAktif, pageAktif }: any) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isPaying, setIsPaying] = useState(false);
   
-  // State untuk Modal Detail
   const [modalData, setModalData] = useState<any | null>(null);
 
   const TABS = [
-    { id: 'semua', label: 'Semua' },
+    { id: 'semua', label: 'Semua Status' },
     { id: 'menunggu_pembayaran', label: 'Menunggu Pembayaran' },
     { id: 'dibayar', label: 'Dibayar' },
     { id: 'diambil', label: 'Sedang Disewa' },
@@ -24,12 +23,27 @@ export default function RiwayatClient({ initialData, filterAktif, pageAktif }: a
     { id: 'dibatalkan', label: 'Dibatalkan' }
   ];
 
-  const statusColors: Record<string, string> = {
+  const statusPemesananColors: Record<string, string> = {
     'menunggu_pembayaran': 'bg-amber-100 text-amber-800 border-amber-200',
     'dibayar': 'bg-blue-100 text-blue-800 border-blue-200',
     'diambil': 'bg-indigo-100 text-indigo-800 border-indigo-200',
     'selesai': 'bg-green-100 text-green-800 border-green-200',
     'dibatalkan': 'bg-red-100 text-red-800 border-red-200',
+  };
+
+  const statusPembayaranColors: Record<string, string> = {
+    'settlement': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    'pending': 'bg-amber-100 text-amber-800 border-amber-200',
+    'expire': 'bg-rose-100 text-rose-800 border-rose-200',
+    'cancel': 'bg-rose-100 text-rose-800 border-rose-200',
+    'deny': 'bg-rose-100 text-rose-800 border-rose-200',
+    'belum_bayar': 'bg-gray-100 text-gray-700 border-gray-200'
+  };
+
+  const statusVerifikasiColors: Record<string, string> = {
+    'menunggu': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+    'valid': 'bg-green-50 text-green-700 border-green-200',
+    'ditolak': 'bg-red-50 text-red-700 border-red-200',
   };
 
   const gantiFilter = (status: string) => {
@@ -53,9 +67,9 @@ export default function RiwayatClient({ initialData, filterAktif, pageAktif }: a
       
       if (typeof (window as any).snap !== 'undefined') {
         (window as any).snap.pay(data.token, {
-          onSuccess: () => { alert('Pembayaran sukses!'); setModalData(null); router.refresh(); },
-          onPending: () => { alert('Menunggu konfirmasi pembayaran.'); setModalData(null); router.refresh(); },
-          onError: () => { alert('Pembayaran gagal.'); router.refresh(); },
+          onSuccess: () => { alert('Pembayaran berhasil dikonfirmasi!'); setModalData(null); router.refresh(); },
+          onPending: () => { alert('Menunggu konfirmasi pembayaran dari sistem.'); setModalData(null); router.refresh(); },
+          onError: () => { alert('Pembayaran gagal atau dibatalkan.'); router.refresh(); },
           onClose: () => { router.refresh(); }
         });
       }
@@ -76,7 +90,7 @@ export default function RiwayatClient({ initialData, filterAktif, pageAktif }: a
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      alert(`Status transaksi: ${data.status.toUpperCase()}`);
+      alert(`Status transaksi saat ini: ${data.status.toUpperCase()}`);
       setModalData(null);
       router.refresh();
     } catch (err: any) {
@@ -87,7 +101,7 @@ export default function RiwayatClient({ initialData, filterAktif, pageAktif }: a
   }
 
   async function handleBatal(id_pemesanan: string) {
-    if (!confirm('Batalkan pemesanan ini?')) return;
+    if (!confirm('Apakah Anda yakin ingin membatalkan pemesanan ini?')) return;
     startTransition(async () => {
       await batalkanPemesanan(id_pemesanan);
       setModalData(null);
@@ -99,7 +113,7 @@ export default function RiwayatClient({ initialData, filterAktif, pageAktif }: a
     <div className="space-y-6">
       <Script src={process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL || 'https://app.sandbox.midtrans.com/snap/snap.js'} data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY} strategy="lazyOnload" />
 
-      {/* TABS Filter */}
+      {/* Tabs Filter */}
       <div className="flex overflow-x-auto hide-scrollbar space-x-2 pb-2">
         {TABS.map(tab => (
           <button
@@ -107,7 +121,7 @@ export default function RiwayatClient({ initialData, filterAktif, pageAktif }: a
             onClick={() => gantiFilter(tab.id)}
             className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors border ${
               filterAktif === tab.id 
-                ? 'bg-gray-900 text-white border-gray-900' 
+                ? 'bg-blue-600 text-white border-blue-600 shadow-sm' 
                 : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
             }`}
           >
@@ -116,13 +130,13 @@ export default function RiwayatClient({ initialData, filterAktif, pageAktif }: a
         ))}
       </div>
 
-      {/* List Riwayat */}
+      {/* Daftar Pemesanan */}
       {initialData.data.length === 0 ? (
         <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-12 text-center shadow-sm">
           <Search className="mx-auto text-gray-300 mb-3" size={48} />
           <h3 className="text-lg font-bold text-gray-900">Belum ada pemesanan</h3>
-          <p className="text-gray-500 mt-1 mb-6">Anda belum memiliki riwayat pemesanan dengan status ini.</p>
-          <button onClick={() => router.push('/pencarian-pintar')} className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition">
+          <p className="text-gray-500 mt-1 mb-6">Anda tidak memiliki daftar pemesanan pada kategori ini.</p>
+          <button onClick={() => router.push('/pencarian-pintar')} className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition">
             Mulai Cari Mobil
           </button>
         </div>
@@ -132,63 +146,104 @@ export default function RiwayatClient({ initialData, filterAktif, pageAktif }: a
             const mobil = p.kendaraan;
             const jumlahHari = hitungJumlahHari(p.tanggal_sewa, p.tanggal_kembali);
             const totalBayar = p.transaksi?.[0]?.total_harga || (mobil.harga_sewa * jumlahHari);
+            const statusPembayaranTrx = p.transaksi?.[0]?.status_pembayaran || 'belum_bayar';
 
             return (
-              <div key={p.id_pemesanan} className="bg-white rounded-2xl border border-gray-200 p-5 md:p-6 shadow-sm flex flex-col md:flex-row gap-6 items-start md:items-center hover:shadow-md transition">
-                <div className="w-full md:w-40 h-28 bg-gray-50 rounded-xl flex items-center justify-center shrink-0 border border-gray-100 p-2">
-                  {mobil.foto_url ? (
-                    <img src={mobil.foto_url} alt={mobil.nama_kendaraan} className="w-full h-full object-contain" />
-                  ) : <Car size={32} className="text-gray-300" />}
+              <div key={p.id_pemesanan} className="bg-white rounded-2xl border border-gray-200 p-5 md:p-6 shadow-sm hover:shadow-md transition space-y-4">
+                
+                {/* Header Kartu: Foto, Nama, & 3 Badge */}
+                <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
+                  <div className="w-full md:w-36 h-24 bg-gray-50 rounded-xl flex items-center justify-center shrink-0 border border-gray-100 p-2">
+                    {mobil.foto_url ? (
+                      <img src={mobil.foto_url} alt={mobil.nama_kendaraan} className="w-full h-full object-contain" />
+                    ) : <Car size={32} className="text-gray-300" />}
+                  </div>
+
+                  <div className="flex-1 space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900">{mobil.nama_kendaraan}</h3>
+                        <p className="text-xs text-gray-500 font-mono">ID Booking: {p.id_pemesanan.split('-')[0].toUpperCase()}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-500">Total Biaya</p>
+                        <p className="text-lg font-extrabold text-blue-600">{formatRupiah(totalBayar)}</p>
+                      </div>
+                    </div>
+
+                    {/* TIGA BADGE: status_pemesanan, status_pembayaran, status_verifikasi */}
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase border ${statusPemesananColors[p.status_pemesanan]}`}>
+                        Pemesanan: {p.status_pemesanan.replace('_', ' ')}
+                      </span>
+                      <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase border ${statusPembayaranColors[statusPembayaranTrx]}`}>
+                        Bayar: {statusPembayaranTrx.replace('_', ' ')}
+                      </span>
+                      <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase border ${statusVerifikasiColors[p.status_verifikasi]}`}>
+                        Dokumen: {p.status_verifikasi}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex-1 space-y-3">
-                  <div className="flex flex-wrap justify-between items-start gap-2">
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900">{mobil.nama_kendaraan}</h3>
-                      <p className="text-xs text-gray-500 font-mono">ID: {p.id_pemesanan.split('-')[0].toUpperCase()}</p>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase border ${statusColors[p.status_pemesanan]}`}>
-                      {p.status_pemesanan.replace('_', ' ')}
-                    </span>
+                {/* Body Kartu: Info Tanggal & Rute */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm pt-2 border-t border-gray-100">
+                  <div className="flex items-center text-gray-600">
+                    <Calendar size={16} className="mr-2 text-gray-400 shrink-0" />
+                    <span>{formatTanggal(p.tanggal_sewa).split(',')[0]} - {formatTanggal(p.tanggal_kembali).split(',')[0]} ({jumlahHari} Hari)</span>
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                    <div className="flex items-center text-gray-600">
-                      <Calendar size={16} className="mr-2 text-gray-400" />
-                      {formatTanggal(p.tanggal_sewa).split(',')[0]} - {formatTanggal(p.tanggal_kembali).split(',')[0]}
-                    </div>
-                    <div className="flex items-center text-gray-600">
-                      <MapPin size={16} className="mr-2 text-gray-400" />
-                      {p.rute_perjalanan.length > 20 ? p.rute_perjalanan.substring(0,20)+'...' : p.rute_perjalanan}
-                    </div>
+                  <div className="flex items-center text-gray-600">
+                    <MapPin size={16} className="mr-2 text-gray-400 shrink-0" />
+                    <span>Rute: {p.rute_perjalanan}</span>
                   </div>
                 </div>
 
-                <div className="w-full md:w-auto md:text-right border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6 flex flex-row md:flex-col justify-between items-center md:items-end gap-3">
-                  <div>
-                    <p className="text-xs text-gray-500 mb-0.5">Total Harga</p>
-                    <p className="text-lg font-bold text-blue-600">{formatRupiah(totalBayar)}</p>
-                  </div>
+                {/* Footer Kartu: Tombol Aksi Sesuai Status */}
+                <div className="flex flex-wrap justify-end gap-2 pt-2">
                   <button 
                     onClick={() => setModalData({ ...p, totalBayar, jumlahHari })}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-sm font-semibold transition"
+                    className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-xl text-sm font-semibold transition flex items-center"
                   >
-                    Lihat Detail
+                    <Info size={16} className="mr-1.5" /> Detail & Linimasa
                   </button>
+
+                  {p.status_pemesanan === 'menunggu_pembayaran' && (
+                    <>
+                      <button 
+                        onClick={() => handleCekStatus(p.id_pemesanan)} disabled={isPaying || isPending}
+                        className="px-4 py-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 rounded-xl text-sm font-semibold transition flex items-center disabled:opacity-50"
+                      >
+                        <RefreshCw size={14} className={`mr-1.5 ${isPaying ? 'animate-spin' : ''}`} /> Perbarui Status
+                      </button>
+                      <button 
+                        onClick={() => handleBatal(p.id_pemesanan)} disabled={isPaying || isPending}
+                        className="px-4 py-2 bg-white text-red-600 border border-red-200 hover:bg-red-50 rounded-xl text-sm font-semibold transition flex items-center disabled:opacity-50"
+                      >
+                        <Ban size={14} className="mr-1.5" /> Batalkan
+                      </button>
+                      <button 
+                        onClick={() => handleBayar(p)} disabled={isPaying || isPending}
+                        className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition flex items-center shadow-sm disabled:opacity-50"
+                      >
+                        <CreditCard size={14} className="mr-1.5" /> Bayar Sekarang
+                      </button>
+                    </>
+                  )}
                 </div>
+
               </div>
             );
           })}
         </div>
       )}
 
-      {/* Pagination */}
+      {/* Navigasi Paginasi */}
       {initialData.totalPages > 1 && (
         <div className="flex justify-center space-x-2 pt-4">
           {Array.from({ length: initialData.totalPages }).map((_, idx) => (
             <button
               key={idx} onClick={() => gantiHalaman(idx + 1)}
-              className={`w-10 h-10 rounded-lg font-bold text-sm transition ${pageAktif === idx + 1 ? 'bg-blue-600 text-white shadow-md' : 'bg-white border text-gray-600 hover:bg-gray-50'}`}
+              className={`w-10 h-10 rounded-xl font-bold text-sm transition ${pageAktif === idx + 1 ? 'bg-blue-600 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
             >
               {idx + 1}
             </button>
@@ -196,7 +251,7 @@ export default function RiwayatClient({ initialData, filterAktif, pageAktif }: a
         </div>
       )}
 
-      {/* MODAL DETAIL & TIMELINE */}
+      {/* Modal Detail & Linimasa */}
       {modalData && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
           <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl relative">
@@ -209,24 +264,24 @@ export default function RiwayatClient({ initialData, filterAktif, pageAktif }: a
             </div>
 
             <div className="p-6 space-y-8">
-              {/* Linimasa (Timeline) */}
+              {/* Linimasa Status */}
               <div>
-                <h4 className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-wider">Status Perjalanan</h4>
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Linimasa Status</h4>
                 {modalData.status_pemesanan === 'dibatalkan' ? (
                   <div className="bg-red-50 p-4 rounded-xl border border-red-100 flex items-start">
-                    <Ban className="text-red-500 mr-3 mt-0.5" size={20} />
+                    <Ban className="text-red-500 mr-3 mt-0.5 shrink-0" size={20} />
                     <div>
                       <p className="font-bold text-red-700">Pemesanan Dibatalkan</p>
-                      <p className="text-sm text-red-600 mt-1">Transaksi ini tidak dapat dilanjutkan.</p>
+                      <p className="text-sm text-red-600 mt-0.5">Jadwal kendaraan telah dibebaskan kembali.</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="relative flex justify-between">
-                    <div className="absolute top-4 left-4 right-4 h-1 bg-gray-200 rounded-full z-0"></div>
-                    <div className={`absolute top-4 left-4 h-1 rounded-full z-0 transition-all duration-500 ${
-                      modalData.status_pemesanan === 'selesai' ? 'w-[100%] bg-blue-600' :
-                      modalData.status_pemesanan === 'diambil' ? 'w-[66%] bg-blue-600' :
-                      modalData.status_pemesanan === 'dibayar' ? 'w-[33%] bg-blue-600' : 'w-0 bg-blue-600'
+                  <div className="relative flex justify-between px-2">
+                    <div className="absolute top-4 left-6 right-6 h-1 bg-gray-200 rounded-full z-0"></div>
+                    <div className={`absolute top-4 left-6 h-1 rounded-full z-0 transition-all duration-500 ${
+                      modalData.status_pemesanan === 'selesai' ? 'w-[88%] bg-blue-600' :
+                      modalData.status_pemesanan === 'diambil' ? 'w-[58%] bg-blue-600' :
+                      modalData.status_pemesanan === 'dibayar' ? 'w-[28%] bg-blue-600' : 'w-0 bg-blue-600'
                     }`}></div>
                     
                     {['Menunggu', 'Dibayar', 'Diambil', 'Selesai'].map((step, idx) => {
@@ -251,80 +306,43 @@ export default function RiwayatClient({ initialData, filterAktif, pageAktif }: a
 
               {/* Rincian Biaya */}
               <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
-                <h4 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wider border-b pb-2">Rincian Tagihan</h4>
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Rincian Biaya</h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between text-gray-600">
-                    <span>Harga Sewa ({modalData.jumlahHari} Hari)</span>
-                    <span>{formatRupiah(modalData.kendaraan.harga_sewa)} x {modalData.jumlahHari}</span>
+                    <span>Sewa ({modalData.jumlahHari} Hari @ {formatRupiah(modalData.kendaraan.harga_sewa)})</span>
+                    <span className="font-semibold text-gray-900">{formatRupiah(modalData.kendaraan.harga_sewa * modalData.jumlahHari)}</span>
                   </div>
                   {modalData.transaksi?.[0]?.denda > 0 && (
                     <div className="flex justify-between text-red-600">
-                      <span>Denda Keterlambatan/Kerusakan</span>
-                      <span>+ {formatRupiah(modalData.transaksi[0].denda)}</span>
+                      <span>Denda Keterlambatan / Kerusakan</span>
+                      <span className="font-semibold">+ {formatRupiah(modalData.transaksi[0].denda)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-base font-extrabold text-gray-900 pt-2 border-t mt-2">
+                  <div className="flex justify-between text-base font-extrabold text-gray-900 pt-3 border-t border-gray-200 mt-2">
                     <span>Total Keseluruhan</span>
                     <span className="text-blue-600">{formatRupiah(modalData.totalBayar + (modalData.transaksi?.[0]?.denda || 0))}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Data Kendaraan & Rute */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-500 mb-1">Kendaraan</p>
-                  <p className="font-semibold text-gray-900">{modalData.kendaraan.nama_kendaraan} ({modalData.kendaraan.plat_nomor})</p>
-                </div>
-                <div>
-                  <p className="text-gray-500 mb-1">Rute</p>
-                  <p className="font-semibold text-gray-900">{modalData.rute_perjalanan}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500 mb-1">Dokumen</p>
-                  <p className="font-semibold text-gray-900">
-                    Verifikasi: <span className={modalData.status_verifikasi === 'valid' ? 'text-green-600' : 'text-amber-600'}>{modalData.status_verifikasi.toUpperCase()}</span>
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-500 mb-1">Metode Bayar</p>
-                  <p className="font-semibold text-gray-900 uppercase">{modalData.transaksi?.[0]?.metode_pembayaran?.replace('_', ' ') || '-'}</p>
+              {/* Detail Dokumen Verifikasi */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Verifikasi Dokumen Identitas</h4>
+                <div className="flex flex-wrap gap-4 text-sm">
+                  {modalData.ktp_signed_url ? (
+                    <a href={modalData.ktp_signed_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center font-medium">
+                      Lihat Foto KTP <ExternalLink size={14} className="ml-1" />
+                    </a>
+                  ) : <span className="text-gray-400 text-xs">Foto KTP tidak tersedia</span>}
+                  
+                  {modalData.sim_signed_url ? (
+                    <a href={modalData.sim_signed_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center font-medium">
+                      Lihat Foto SIM <ExternalLink size={14} className="ml-1" />
+                    </a>
+                  ) : <span className="text-gray-400 text-xs">Foto SIM tidak tersedia</span>}
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              {modalData.status_pemesanan === 'menunggu_pembayaran' && (
-                <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-100">
-                  <button 
-                    onClick={() => handleCekStatus(modalData.id_pemesanan)} disabled={isPaying || isPending}
-                    className="flex-1 px-4 py-3 bg-white text-gray-700 font-semibold rounded-xl border border-gray-300 hover:bg-gray-50 transition flex items-center justify-center disabled:opacity-50"
-                  >
-                    <RefreshCw size={16} className={`mr-2 ${isPaying ? 'animate-spin' : ''}`} /> Perbarui Status
-                  </button>
-                  <button 
-                    onClick={() => handleBatal(modalData.id_pemesanan)} disabled={isPaying || isPending}
-                    className="flex-1 px-4 py-3 bg-white text-red-600 font-semibold rounded-xl border border-red-200 hover:bg-red-50 transition flex items-center justify-center disabled:opacity-50"
-                  >
-                    <Ban size={16} className="mr-2" /> Batalkan
-                  </button>
-                  <button 
-                    onClick={() => handleBayar(modalData)} disabled={isPaying || isPending}
-                    className="flex-[1.5] px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition shadow-lg shadow-blue-200 flex items-center justify-center disabled:bg-blue-400"
-                  >
-                    <CreditCard size={16} className="mr-2" /> {isPaying ? 'Memuat...' : 'Bayar Sekarang'}
-                  </button>
-                </div>
-              )}
-              {modalData.status_pemesanan === 'dibatalkan' && (
-                <div className="flex pt-4 border-t border-gray-100">
-                  <button 
-                    onClick={() => { setModalData(null); router.push('/pencarian-pintar'); }}
-                    className="w-full px-4 py-3 bg-blue-50 text-blue-700 font-bold rounded-xl hover:bg-blue-100 transition"
-                  >
-                    Pesan Kendaraan Baru
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>

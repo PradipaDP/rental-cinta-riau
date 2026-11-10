@@ -29,8 +29,29 @@ export async function ambilRiwayatPemesanan(page = 1, statusFilter = 'semua') {
 
   if (error) throw new Error(error.message);
 
+  // Generasi Signed URL untuk KTP dan SIM secara aman dari Supabase Storage
+  const dataDenganSignedUrl = await Promise.all((data || []).map(async (item) => {
+    let ktpUrl = null;
+    let simUrl = null;
+
+    if (item.foto_ktp) {
+      const { data: ktpData } = await supabase.storage.from('dokumen').createSignedUrl(item.foto_ktp, 3600);
+      ktpUrl = ktpData?.signedUrl || null;
+    }
+    if (item.foto_sim) {
+      const { data: simData } = await supabase.storage.from('dokumen').createSignedUrl(item.foto_sim, 3600);
+      simUrl = simData?.signedUrl || null;
+    }
+
+    return {
+      ...item,
+      ktp_signed_url: ktpUrl,
+      sim_signed_url: simUrl,
+    };
+  }));
+
   return { 
-    data: data || [], 
+    data: dataDenganSignedUrl, 
     totalCount: count || 0, 
     totalPages: Math.ceil((count || 0) / perPage),
     currentPage: page
