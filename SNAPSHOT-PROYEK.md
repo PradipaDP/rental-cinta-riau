@@ -1,6 +1,6 @@
-# SNAPSHOT PROYEK rental-cinta-riau (2026-11-11 12:53)
+# SNAPSHOT PROYEK rental-cinta-riau (2026-11-11 16:45)
 
-Jumlah file dalam snapshot: 71
+Jumlah file dalam snapshot: 77
 TIDAK termasuk: node_modules, .next, .env.local (rahasia), package-lock.json, gambar/aset di folder public.
 
 ## Daftar file yang ada di snapshot
@@ -42,11 +42,15 @@ TIDAK termasuk: node_modules, .next, .env.local (rahasia), package-lock.json, ga
 - src\app\globals.css
 - src\app\layout.tsx
 - src\app\page.tsx
+- src\app\staf\cetak\[id_transaksi]\CetakClient.tsx
+- src\app\staf\cetak\[id_transaksi]\page.tsx
+- src\app\staf\cetak\page.tsx
 - src\app\staf\ketersediaan\KetersediaanClient.tsx
 - src\app\staf\ketersediaan\page.tsx
 - src\app\staf\layout.tsx
 - src\app\staf\page.tsx
 - src\app\staf\pengembalian\[id_transaksi]\page.tsx
+- src\app\staf\pengembalian\[id_transaksi]\PengembalianClient.tsx
 - src\app\staf\pengembalian\page.tsx
 - src\app\staf\serah-terima\[id_pemesanan]\page.tsx
 - src\app\staf\serah-terima\[id_pemesanan]\SerahTerimaClient.tsx
@@ -70,6 +74,8 @@ TIDAK termasuk: node_modules, .next, .env.local (rahasia), package-lock.json, ga
 - src\lib\supabase\admin.ts
 - src\lib\supabase\client.ts
 - src\lib\supabase\server.ts
+- src\lib\surat-perjanjian.ts
+- src\lib\terbilang.ts
 - src\lib\validations.ts
 - src\middleware.ts
 - src\types\index.ts
@@ -162,6 +168,13 @@ D:\SKRIPSI\RENTAL-CINTA-RIAU\RENTAL-CINTA-RIAU\SRC
 |   |   |   layout.tsx
 |   |   |   page.tsx
 |   |   |   
+|   |   +---cetak
+|   |   |   |   page.tsx
+|   |   |   |   
+|   |   |   \---[id_transaksi]
+|   |   |           CetakClient.tsx
+|   |   |           page.tsx
+|   |   |           
 |   |   +---ketersediaan
 |   |   |       KetersediaanClient.tsx
 |   |   |       page.tsx
@@ -171,6 +184,7 @@ D:\SKRIPSI\RENTAL-CINTA-RIAU\RENTAL-CINTA-RIAU\SRC
 |   |   |   |   
 |   |   |   \---[id_transaksi]
 |   |   |           page.tsx
+|   |   |           PengembalianClient.tsx
 |   |   |           
 |   |   +---serah-terima
 |   |   |   |   page.tsx
@@ -203,6 +217,8 @@ D:\SKRIPSI\RENTAL-CINTA-RIAU\RENTAL-CINTA-RIAU\SRC
 |   |   config.ts
 |   |   formatters.ts
 |   |   midtrans.ts
+|   |   surat-perjanjian.ts
+|   |   terbilang.ts
 |   |   validations.ts
 |   |   
 |   +---cbf
@@ -3084,6 +3100,95 @@ export async function ambilDaftarPengembalian() {
     .order('tanggal_kembali', { ascending: true });
   return data || [];
 }
+
+// 9. Proses Pengembalian (Read Detail)
+export async function ambilDetailPengembalian(id_transaksi: string) {
+  await wajibRole(['staf']);
+  const supabase = createAdminClient();
+  
+  const { data, error } = await supabase
+    .from('transaksi')
+    .select('*, pemesanan(*, users(*), kendaraan(*))')
+    .eq('id_transaksi', id_transaksi)
+    .single();
+
+  if (error || !data) return null;
+  return data;
+}
+
+// 10. Aksi Menyelesaikan Transaksi & Pengembalian
+export async function selesaikanTransaksi(id_transaksi: string, kembaliAktual: string, dendaInput: number) {
+  await wajibRole(['staf']);
+  const supabase = createAdminClient();
+
+  // A. Ambil data asli untuk validasi ketat
+  const { data: trx } = await supabase
+    .from('transaksi')
+    .select('*, pemesanan(id_pemesanan, status_pemesanan, id_kendaraan)')
+    .eq('id_transaksi', id_transaksi)
+    .single();
+
+  if (!trx) return { error: 'Transaksi tidak ditemukan.' };
+  if (trx.status !== 'berjalan' || trx.status_pembayaran !== 'settlement') {
+    return { error: 'Transaksi ditolak: Transaksi tidak sedang berjalan atau pembayaran belum lunas.' };
+  }
+
+  const pesanan = Array.isArray(trx.pemesanan) ? trx.pemesanan[0] : trx.pemesanan;
+  if (pesanan?.status_pemesanan !== 'diambil') {
+    return { error: 'Transaksi ditolak: Status pemesanan KENDARAAN belum ditandai diambil.' };
+  }
+
+  // B. Eksekusi Beruntun dengan Perlindungan Rollback
+  // Langkah 1: Update Transaksi
+  const { error: err1 } = await supabase.from('transaksi').update({
+    tanggal_kembali_aktual: kembaliAktual,
+    denda: dendaInput,
+    status: 'selesai'
+  }).eq('id_transaksi', id_transaksi);
+  
+  if (err1) return { error: 'Gagal memperbarui data transaksi: ' + err1.message };
+
+  // Langkah 2: Update Pemesanan
+  const { error: err2 } = await supabase.from('pemesanan').update({
+    status_pemesanan: 'selesai'
+  }).eq('id_pemesanan', pesanan.id_pemesanan);
+  
+  if (err2) {
+    // Rollback Langkah 1
+    await supabase.from('transaksi').update({ tanggal_kembali_aktual: null, denda: 0, status: 'berjalan' }).eq('id_transaksi', id_transaksi);
+    return { error: 'Gagal memperbarui pemesanan, proses dibatalkan: ' + err2.message };
+  }
+
+  // Langkah 3: Update Kendaraan
+  const { error: err3 } = await supabase.from('kendaraan').update({
+    status: 'tersedia'
+  }).eq('id_kendaraan', pesanan.id_kendaraan);
+  
+  if (err3) {
+    // Rollback Langkah 1 dan 2
+    await supabase.from('pemesanan').update({ status_pemesanan: 'diambil' }).eq('id_pemesanan', pesanan.id_pemesanan);
+    await supabase.from('transaksi').update({ tanggal_kembali_aktual: null, denda: 0, status: 'berjalan' }).eq('id_transaksi', id_transaksi);
+    return { error: 'Gagal membebaskan kendaraan, proses dibatalkan: ' + err3.message };
+  }
+
+  revalidatePath('/staf');
+  revalidatePath('/staf/pengembalian');
+  return { success: true };
+}
+
+// 11. Daftar Transaksi untuk Cetak (Hanya yang Settlement)
+export async function ambilDaftarCetak() {
+  await wajibRole(['staf']);
+  const supabase = createAdminClient();
+  
+  const { data } = await supabase
+    .from('transaksi')
+    .select('*, pemesanan(id_pemesanan, rute_perjalanan, users(nama), kendaraan(nama_kendaraan, plat_nomor))')
+    .eq('status_pembayaran', 'settlement')
+    .order('created_at', { ascending: false });
+
+  return data || [];
+}
 ```
 
 ### FILE: src\app\actions\super-admin.ts
@@ -4120,6 +4225,369 @@ function HeroCarCardIllustration({ fallbackIllustration, className }: { fallback
 }
 ```
 
+### FILE: src\app\staf\cetak\[id_transaksi]\CetakClient.tsx
+```tsx
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { NAMA_PERUSAHAAN, ALAMAT_PERUSAHAAN, PENANDATANGAN_NAMA, PENANDATANGAN_PEKERJAAN, PENANDATANGAN_JABATAN, PENANDATANGAN_ALAMAT, PENANDATANGAN_KTP, PENANDATANGAN_TELEPON, BATAS_HARI_PENARIKAN, PENGADILAN_NEGERI, TEMPAT_PENANDATANGANAN, DENDA_PERSEN_PER_HARI } from '@/lib/config';
+import { formatRupiah, hitungJumlahHari, formatTanggal } from '@/lib/formatters';
+import { terbilang, namaHariIndonesia, namaBulanIndonesia } from '@/lib/terbilang';
+import { TEMPLATE_SURAT_PERJANJIAN } from '@/lib/surat-perjanjian';
+import { Printer, ArrowLeft, FileText, FileCheck2 } from 'lucide-react';
+
+export default function CetakClient({ transaksi, initialTab }: { transaksi: any; initialTab: string }) {
+  const router = useRouter();
+  const [tab, setTab] = useState(initialTab);
+  const [jumlahRangkap, setJumlahRangkap] = useState(1);
+
+  const pesanan = transaksi.pemesanan;
+  const mobil = pesanan?.kendaraan;
+  const pelanggan = pesanan?.users;
+
+  const jumlahHari = hitungJumlahHari(transaksi.tanggal_sewa, transaksi.tanggal_kembali);
+  const hargaPerHari = mobil?.harga_sewa || 0;
+  const totalHarga = transaksi.total_harga;
+  const denda = transaksi.denda || 0;
+  const totalKeseluruhan = totalHarga + denda;
+
+  // Format Nomor Kwitansi: KW-<YYYYMM>-<8 Karakter Pertama ID Transaksi UPPERCASE>
+  const tglObj = new Date(transaksi.created_at);
+  const ymStr = `${tglObj.getFullYear()}${String(tglObj.getMonth() + 1).padStart(2, '0')}`;
+  const noKwitansi = `KW-${ymStr}-${transaksi.id_transaksi.replace(/-/g, '').substring(0, 8).toUpperCase()}`;
+
+  // Mapping Metode Pembayaran
+  const formatMetodeBayar = (metode: string) => {
+    if (!metode || metode === 'tunai') return 'Tunai / Cash';
+    if (metode === 'transfer_bank') return 'Transfer Bank / Virtual Account';
+    if (metode === 'qris') return 'QRIS';
+    if (metode === 'gopay') return 'GoPay';
+    return metode.charAt(0).toUpperCase() + metode.slice(1);
+  };
+
+  // Persiapan Data Template Surat Perjanjian
+  const dateSewa = new Date(pesanan.tanggal_sewa);
+  const dateKembali = new Date(pesanan.tanggal_kembali);
+
+  const renderSuratHtml = () => {
+    let html = TEMPLATE_SURAT_PERJANJIAN;
+
+    const replacements: Record<string, string> = {
+      '{{hari_surat}}': namaHariIndonesia(dateSewa.getDay()),
+      '{{tanggal_angka}}': String(dateSewa.getDate()),
+      '{{tanggal_huruf}}': terbilang(dateSewa.getDate()),
+      '{{bulan_surat}}': namaBulanIndonesia(dateSewa.getMonth()),
+      '{{tahun_angka}}': String(dateSewa.getFullYear()),
+      '{{tahun_huruf}}': terbilang(dateSewa.getFullYear()),
+      '{{tanggal_sewa_lengkap}}': `${dateSewa.getDate()} ${namaBulanIndonesia(dateSewa.getMonth())} ${dateSewa.getFullYear()}`,
+      '{{tanggal_kembali_lengkap}}': `${dateKembali.getDate()} ${namaBulanIndonesia(dateKembali.getMonth())} ${dateKembali.getFullYear()}`,
+
+      '{{p1_nama}}': PENANDATANGAN_NAMA || '..................................................................',
+      '{{p1_pekerjaan}}': PENANDATANGAN_PEKERJAAN || '..................................................................',
+      '{{p1_jabatan}}': PENANDATANGAN_JABATAN || '..................................................................',
+      '{{p1_alamat}}': PENANDATANGAN_ALAMAT || '..................................................................',
+      '{{p1_ktp}}': PENANDATANGAN_KTP || '..................................................................',
+      '{{p1_telepon}}': PENANDATANGAN_TELEPON || '..................................................................',
+      '{{perusahaan_nama}}': NAMA_PERUSAHAAN,
+      '{{perusahaan_alamat}}': ALAMAT_PERUSAHAAN,
+
+      '{{p2_nama}}': pelanggan?.nama || '..................................................................',
+      '{{p2_pekerjaan}}': '..................................................................',
+      '{{p2_jabatan}}': '..................................................................',
+      '{{p2_alamat}}': pelanggan?.alamat || '..................................................................',
+      '{{p2_ktp}}': '..................................................................',
+      '{{p2_telepon}}': pelanggan?.no_hp || '..................................................................',
+
+      '{{kendaraan_merek}}': `${mobil?.nama_kendaraan || ''} (${mobil?.jenis_kendaraan || ''})`,
+      '{{kendaraan_tahun}}': String(mobil?.tahun_kendaraan || '.....................'),
+      '{{kendaraan_plat}}': mobil?.plat_nomor || '.....................',
+      '{{kendaraan_bpkb}}': '..................................................................',
+      '{{kendaraan_rangka}}': '..................................................................',
+      '{{kendaraan_mesin}}': '..................................................................',
+      '{{kendaraan_warna}}': '..................................................................',
+      '{{kendaraan_kondisi}}': 'Baik, lengkap, dan siap jalan',
+
+      '{{jumlah_hari}}': String(jumlahHari),
+      '{{jumlah_hari_huruf}}': terbilang(jumlahHari),
+      '{{rute_perjalanan}}': pesanan.rute_perjalanan,
+      '{{rute_peruntukan_label}}': mobil?.rute_peruntukan === 'dalam_kota' ? 'Dalam Kota' : mobil?.rute_peruntukan === 'luar_kota' ? 'Luar Kota' : 'Dalam & Luar Kota',
+
+      '{{harga_per_hari}}': Number(hargaPerHari).toLocaleString('id-ID'),
+      '{{harga_per_hari_huruf}}': terbilang(hargaPerHari) + ' rupiah',
+      '{{total_harga}}': Number(totalHarga).toLocaleString('id-ID'),
+      '{{total_harga_huruf}}': terbilang(totalHarga) + ' rupiah',
+      '{{metode_pembayaran_label}}': formatMetodeBayar(transaksi.metode_pembayaran),
+
+      '{{denda_persen}}': String(DENDA_PERSEN_PER_HARI),
+      '{{denda_persen_huruf}}': terbilang(DENDA_PERSEN_PER_HARI),
+      '{{denda_per_hari}}': Number((hargaPerHari * DENDA_PERSEN_PER_HARI) / 100).toLocaleString('id-ID'),
+      '{{denda_per_hari_huruf}}': terbilang((hargaPerHari * DENDA_PERSEN_PER_HARI) / 100) + ' rupiah',
+
+      '{{batas_hari_penarikan}}': BATAS_HARI_PENARIKAN || '3',
+      '{{batas_hari_penarikan_huruf}}': terbilang(Number(BATAS_HARI_PENARIKAN || '3')),
+      '{{pengadilan_negeri}}': PENGADILAN_NEGERI || 'Pengadilan Negeri Setempat',
+      '{{tempat_penandatanganan}}': TEMPAT_PENANDATANGANAN || 'Pekanbaru',
+    };
+
+    for (const [key, val] of Object.entries(replacements)) {
+      html = html.split(key).join(val);
+    }
+    return html;
+  };
+
+  const handleCetak = (rangkap: number) => {
+    setJumlahRangkap(rangkap);
+    setTimeout(() => {
+      window.print();
+    }, 200);
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+      {/* Sembunyikan Navigasi saat Print */}
+      <div className="print:hidden space-y-4">
+        <button onClick={() => router.push('/staf/cetak')} className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600">
+          <ArrowLeft size={16} className="mr-1" /> Kembali ke Daftar Cetak
+        </button>
+
+        <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-xl border shadow-sm gap-4">
+          <div className="flex space-x-2">
+            <button 
+              onClick={() => setTab('kwitansi')} 
+              className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center transition ${tab === 'kwitansi' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              <FileText size={16} className="mr-1.5" /> Kwitansi Pembayaran
+            </button>
+            <button 
+              onClick={() => setTab('sp')} 
+              className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center transition ${tab === 'sp' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              <FileCheck2 size={16} className="mr-1.5" /> Surat Perjanjian Sewa
+            </button>
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={() => handleCetak(1)} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm flex items-center shadow transition">
+              <Printer size={16} className="mr-1.5" /> Cetak 1 Rangkap
+            </button>
+            <button onClick={() => handleCetak(2)} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-sm flex items-center shadow transition">
+              <Printer size={16} className="mr-1.5" /> Cetak 2 Rangkap
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* AREA DOKUMEN CETAK */}
+      <div className="space-y-12">
+        {Array.from({ length: jumlahRangkap }).map((_, indexRangkap) => (
+          <div key={indexRangkap} className="bg-white p-10 md:p-14 rounded-2xl shadow-sm border border-gray-200 print:shadow-none print:border-none print:p-0 page-break">
+            
+            {/* 1. KODE DOKUMEN KWITANSI */}
+            {tab === 'kwitansi' && (
+              <div className="space-y-8 font-serif">
+                {/* Kop Perusahaan */}
+                <div className="text-center border-b-2 border-gray-900 pb-6">
+                  <h2 className="text-2xl font-extrabold uppercase tracking-wide">{NAMA_PERUSAHAAN}</h2>
+                  <p className="text-sm text-gray-600 mt-1">{ALAMAT_PERUSAHAAN}</p>
+                </div>
+
+                <div className="text-center">
+                  <h3 className="text-xl font-bold uppercase tracking-wider underline">KWITANSI PEMBAYARAN SEWA KENDARAAN</h3>
+                  <p className="text-sm text-gray-500 font-mono mt-1">No. Kwitansi: {noKwitansi}</p>
+                </div>
+
+                <div className="space-y-4 text-base">
+                  <div className="grid grid-cols-3 border-b border-dashed border-gray-300 pb-3">
+                    <span className="font-semibold text-gray-600">Sudah Terima Dari:</span>
+                    <span className="col-span-2 font-bold text-gray-900">{pelanggan?.nama}</span>
+                  </div>
+                  <div className="grid grid-cols-3 border-b border-dashed border-gray-300 pb-3">
+                    <span className="font-semibold text-gray-600">Banyaknya Uang:</span>
+                    <span className="col-span-2 font-bold italic bg-gray-50 p-2 rounded text-blue-800">
+                      # {terbilang(totalKeseluruhan).toUpperCase()} RUPIAH #
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 border-b border-dashed border-gray-300 pb-3">
+                    <span className="font-semibold text-gray-600">Untuk Pembayaran:</span>
+                    <span className="col-span-2 text-gray-900">
+                      Sewa kendaraan <b>{mobil?.nama_kendaraan} ({mobil?.plat_nomor})</b> untuk periode {jumlahHari} hari ({formatTanggal(transaksi.tanggal_sewa).split(',')[0]} s.d. {formatTanggal(transaksi.tanggal_kembali).split(',')[0]}). Rute: {pesanan.rute_perjalanan}.
+                    </span>
+                  </div>
+                  {denda > 0 && (
+                    <div className="grid grid-cols-3 border-b border-dashed border-gray-300 pb-3 text-red-600">
+                      <span className="font-semibold">Denda Keterlambatan:</span>
+                      <span className="col-span-2 font-bold">{formatRupiah(denda)}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-between items-end pt-8">
+                  <div>
+                    <div className="bg-gray-100 border-2 border-gray-800 p-4 rounded-xl text-xl font-extrabold text-gray-900 inline-block font-mono">
+                      {formatRupiah(totalKeseluruhan)}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">Metode Pembayaran: {formatMetodeBayar(transaksi.metode_pembayaran)}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm">{TEMPAT_PENANDATANGANAN || 'Pekanbaru'}, {new Date().getDate()} {namaBulanIndonesia(new Date().getMonth())} {new Date().getFullYear()}</p>
+                    <p className="font-bold mb-20">Petugas / Kasir PT Cinta Riau Tour & Travel</p>
+                    <p className="font-bold underline">[ _____________________________ ]</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 2. KODE DOKUMEN SURAT PERJANJIAN */}
+            {tab === 'sp' && (
+              <div className="space-y-6">
+                <div className="text-center border-b-2 border-gray-900 pb-6 mb-8 font-serif">
+                  <h2 className="text-2xl font-extrabold uppercase tracking-wide">{NAMA_PERUSAHAAN}</h2>
+                  <p className="text-sm text-gray-600 mt-1">{ALAMAT_PERUSAHAAN}</p>
+                </div>
+
+                <div className="text-center mb-8 font-serif">
+                  <h3 className="text-xl font-extrabold uppercase tracking-wider underline">SURAT PERJANJIAN SEWA MOBIL</h3>
+                </div>
+
+                {/* Render Template HTML Aman */}
+                <div dangerouslySetInnerHTML={{ __html: renderSuratHtml() }} />
+              </div>
+            )}
+
+            {/* Kaki Halaman / Rangkap */}
+            {jumlahRangkap > 1 && (
+              <div className="mt-12 pt-4 border-t text-right text-xs text-gray-400 font-mono print:block">
+                Rangkap {indexRangkap + 1} - {indexRangkap === 0 ? 'untuk PIHAK PERTAMA' : 'untuk PIHAK KEDUA'}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### FILE: src\app\staf\cetak\[id_transaksi]\page.tsx
+```tsx
+import { notFound } from 'next/navigation';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { wajibRole } from '@/lib/auth';
+import CetakClient from './CetakClient';
+
+export const dynamic = 'force-dynamic';
+
+type PageProps = {
+  params: Promise<{ id_transaksi: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
+
+export default async function CetakDokumenDetailPage({ params, searchParams }: PageProps) {
+  await wajibRole(['staf']);
+  const resolvedParams = await params;
+  const resolvedSearch = await searchParams;
+  const tab = typeof resolvedSearch.tab === 'string' ? resolvedSearch.tab : 'kwitansi';
+
+  const supabase = createAdminClient();
+  const { data: trx, error } = await supabase
+    .from('transaksi')
+    .select('*, pemesanan(*, users(*), kendaraan(*))')
+    .eq('id_transaksi', resolvedParams.id_transaksi)
+    .single();
+
+  if (error || !trx) return notFound();
+
+  // Hanya izinkan cetak jika status_pembayaran = settlement
+  if (trx.status_pembayaran !== 'settlement') {
+    return (
+      <div className="max-w-xl mx-auto my-20 p-8 bg-red-50 border border-red-200 rounded-2xl text-center space-y-3">
+        <h1 className="text-xl font-bold text-red-700">Pencetakan Ditolak</h1>
+        <p className="text-sm text-red-600">Dokumen hanya dapat dicetak apabila status pembayaran transaksi telah lunas (<code className="font-mono bg-red-100 px-1 py-0.5 rounded">settlement</code>).</p>
+      </div>
+    );
+  }
+
+  return <CetakClient transaksi={trx} initialTab={tab} />;
+}
+```
+
+### FILE: src\app\staf\cetak\page.tsx
+```tsx
+import Link from 'next/link';
+import { ambilDaftarCetak } from '@/app/actions/staf';
+import { formatTanggal, formatRupiah } from '@/lib/formatters';
+import { Printer, Search, FileText, FileCheck2 } from 'lucide-react';
+
+export const dynamic = 'force-dynamic';
+
+export default async function CetakDokumenPage() {
+  const data = await ambilDaftarCetak();
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center space-x-3">
+        <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><Printer size={24} /></div>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Cetak Dokumen Kwitansi & Surat Perjanjian</h1>
+          <p className="text-gray-500 text-sm mt-1">Daftar transaksi lunas (settlement) yang siap dicetak dokumen legalnya.</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-6 py-4">ID Transaksi / Booking</th>
+                <th className="px-6 py-4">Pelanggan</th>
+                <th className="px-6 py-4">Kendaraan</th>
+                <th className="px-6 py-4">Total Harga</th>
+                <th className="px-6 py-4">Status Pembayaran</th>
+                <th className="px-6 py-4 text-right">Aksi Cetak</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {data.length === 0 ? (
+                <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">Tidak ada transaksi lunas (settlement) untuk dicetak.</td></tr>
+              ) : (
+                data.map((t: any) => (
+                  <tr key={t.id_transaksi} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 font-mono text-gray-600">
+                      <div>{t.id_transaksi.split('-')[0].toUpperCase()}</div>
+                      <div className="text-xs text-gray-400">Booking: {t.pemesanan?.id_pemesanan.split('-')[0].toUpperCase()}</div>
+                    </td>
+                    <td className="px-6 py-4 font-semibold">{t.pemesanan?.users?.nama}</td>
+                    <td className="px-6 py-4">
+                      <div>{t.pemesanan?.kendaraan?.nama_kendaraan}</div>
+                      <div className="text-xs text-gray-500">{t.pemesanan?.kendaraan?.plat_nomor}</div>
+                    </td>
+                    <td className="px-6 py-4 font-bold text-blue-600">{formatRupiah(t.total_harga + (t.denda || 0))}</td>
+                    <td className="px-6 py-4">
+                      <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 uppercase">
+                        {t.status_pembayaran}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right space-x-2">
+                      <Link href={`/staf/cetak/${t.id_transaksi}?tab=kwitansi`} className="inline-flex items-center text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 font-medium text-xs">
+                        <FileText size={14} className="mr-1" /> Kwitansi
+                      </Link>
+                      <Link href={`/staf/cetak/${t.id_transaksi}?tab=sp`} className="inline-flex items-center text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 font-medium text-xs">
+                        <FileCheck2 size={14} className="mr-1" /> Surat Perjanjian
+                      </Link>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
 ### FILE: src\app\staf\ketersediaan\KetersediaanClient.tsx
 ```tsx
 'use client';
@@ -4358,23 +4826,290 @@ export default async function DashboardStafPage() {
 
 ### FILE: src\app\staf\pengembalian\[id_transaksi]\page.tsx
 ```tsx
+import { notFound } from 'next/navigation';
+import { ambilDetailPengembalian } from '@/app/actions/staf';
+import PengembalianClient from './PengembalianClient';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+
+export const dynamic = 'force-dynamic';
+
+type PageProps = {
+  params: Promise<{ id_transaksi: string }>;
+};
+
+export default async function DetailPengembalianPage({ params }: PageProps) {
+  const resolvedParams = await params;
+  const data = await ambilDetailPengembalian(resolvedParams.id_transaksi);
+  if (!data) return notFound();
+
+  return (
+    <div className="max-w-4xl space-y-6">
+      <Link href="/staf/pengembalian" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 mb-2">
+        <ArrowLeft size={16} className="mr-1" /> Kembali ke Daftar Pengembalian
+      </Link>
+      <h1 className="text-2xl font-bold text-gray-900 border-b pb-4">Formulir Pemeriksaan & Pengembalian</h1>
+      
+      <PengembalianClient transaksi={data} />
+    </div>
+  );
+}
+```
+
+### FILE: src\app\staf\pengembalian\[id_transaksi]\PengembalianClient.tsx
+```tsx
+'use client';
+
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { formatTanggal, formatRupiah } from '@/lib/formatters';
+import { selesaikanTransaksi } from '@/app/actions/staf';
+import { DENDA_PERSEN_PER_HARI } from '@/lib/config';
+import { CheckCircle2, AlertTriangle, Undo2, Calculator } from 'lucide-react';
+
+export default function PengembalianClient({ transaksi }: { transaksi: any }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  const todayWIB = new Date().toLocaleDateString('en-CA'); // Format YYYY-MM-DD
+  const [tanggalAktual, setTanggalAktual] = useState(todayWIB);
+
+  // Checkbox kondisi mobil
+  const [cekBodi, setCekBodi] = useState(false);
+  const [cekInterior, setCekInterior] = useState(false);
+  const [cekBahanBakar, setCekBahanBakar] = useState(false);
+  const [cekKelengkapan, setCekKelengkapan] = useState(false);
+
+  const semuaDicentang = cekBodi && cekInterior && cekBahanBakar && cekKelengkapan;
+
+  const pesanan = transaksi.pemesanan;
+  const mobil = pesanan?.kendaraan;
+  const hargaSewaHarian = mobil?.harga_sewa || 0;
+
+  // Hitung selisih hari terlambat secara tepat berdasarkan string YYYY-MM-DD
+  const hitungHariTerlambat = () => {
+    if (!tanggalAktual || !transaksi.tanggal_kembali) return 0;
+    const tglKembaliRencana = new Date(transaksi.tanggal_kembali).getTime();
+    const tglKembaliAktual = new Date(tanggalAktual).getTime();
+    const diffTime = tglKembaliAktual - tglKembaliRencana;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
+  };
+
+  const hariTerlambat = hitungHariTerlambat();
+  const dendaOtomatis = (hariTerlambat * hargaSewaHarian * DENDA_PERSEN_PER_HARI) / 100;
+  
+  // State denda manual menggunakan string agar tidak ada angka "0" di depan saat diketik
+  const [manualDenda, setManualDenda] = useState<string>('');
+  
+  // Jika manualDenda kosong, gunakan dendaOtomatis; jika diisi, parse ke number
+  const finalDenda = manualDenda !== '' ? Number(manualDenda) : dendaOtomatis;
+
+  const handleSelesaikan = () => {
+    setError(null);
+    if (!semuaDicentang) {
+      setError("Semua checklist kondisi fisik dan kelengkapan mobil wajib dicentang!");
+      return;
+    }
+    if (!confirm("Apakah Anda yakin ingin menyelesaikan transaksi dan membebaskan kendaraan ini?")) return;
+
+    startTransition(async () => {
+      const res = await selesaikanTransaksi(transaksi.id_transaksi, tanggalAktual, finalDenda);
+      if (res.error) {
+        setError(res.error);
+      } else {
+        alert("Pengembalian berhasil diselesaikan! Kendaraan kini berstatus tersedia.");
+        router.push('/staf');
+      }
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-sm font-medium flex items-center">
+          <AlertTriangle size={18} className="mr-2 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {/* Grid Informasi Ringkas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-xl border shadow-sm space-y-3">
+          <h3 className="font-bold border-b pb-2 text-gray-900">Informasi Transaksi & Pelanggan</h3>
+          <div className="text-sm space-y-1.5">
+            <div className="flex justify-between"><span className="text-gray-500">Nama Pelanggan</span><span className="font-semibold">{pesanan?.users?.nama}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">No HP</span><span className="font-semibold">{pesanan?.users?.no_hp || '-'}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Kendaraan</span><span className="font-semibold">{mobil?.nama_kendaraan} ({mobil?.plat_nomor})</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Rute Perjalanan</span><span className="font-semibold">{pesanan?.rute_perjalanan}</span></div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl border shadow-sm space-y-3">
+          <h3 className="font-bold border-b pb-2 text-gray-900">Jadwal Sewa</h3>
+          <div className="text-sm space-y-1.5">
+            <div className="flex justify-between"><span className="text-gray-500">Tanggal Mulai Sewa</span><span className="font-semibold">{formatTanggal(transaksi.tanggal_sewa).split(',')[0]}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Batas Tanggal Kembali</span><span className="font-semibold">{formatTanggal(transaksi.tanggal_kembali).split(',')[0]}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Tarif Sewa / Hari</span><span className="font-semibold text-blue-600">{formatRupiah(hargaSewaHarian)}</span></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Input Tanggal Aktual & Hitung Denda */}
+      <div className="bg-white p-6 rounded-xl border shadow-sm space-y-6">
+        <h3 className="font-bold text-gray-900 border-b pb-2">Input Tanggal Pengembalian & Perhitungan Denda</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Pengembalian Aktual (WIB)</label>
+            <input 
+              type="date" 
+              value={tanggalAktual} 
+              onChange={e => setTanggalAktual(e.target.value)}
+              className="w-full border border-gray-300 p-2.5 rounded-lg outline-none focus:border-blue-500 font-medium" 
+            />
+          </div>
+
+          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Hari Terlambat:</span>
+              <span className={`font-bold ${hariTerlambat > 0 ? 'text-red-600' : 'text-green-600'}`}>{hariTerlambat} Hari</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Rumus Denda ({DENDA_PERSEN_PER_HARI}% / hari):</span>
+              <span className="font-mono text-xs text-gray-500">{hariTerlambat} × {formatRupiah(hargaSewaHarian)} × {DENDA_PERSEN_PER_HARI}%</span>
+            </div>
+            <div className="flex justify-between text-base font-extrabold pt-2 border-t border-gray-200">
+              <span>Estimasi Denda:</span>
+              <span className="text-red-600">{formatRupiah(dendaOtomatis)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Koreksi / Nilai Denda Final (Opsional, dapat diubah manual)</label>
+          <input 
+            type="number" 
+            min={0}
+            placeholder={String(dendaOtomatis)}
+            value={manualDenda} 
+            onChange={e => setManualDenda(e.target.value)}
+            className="w-full md:w-1/2 border border-gray-300 p-2.5 rounded-lg outline-none focus:border-blue-500 font-bold text-red-600" 
+          />
+          <p className="text-xs text-gray-400 mt-1">Kosongkan jika ingin menggunakan perhitungan denda otomatis.</p>
+        </div>
+      </div>
+
+      {/* Checklist Kondisi Fisik */}
+      <div className="bg-white p-6 rounded-xl border shadow-sm space-y-4">
+        <h3 className="font-bold text-gray-900 border-b pb-2">Cek Kondisi Mobil Kembali (Wajib Dicentang Semua)</h3>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <label className="flex items-center space-x-3 p-3 bg-gray-50 border rounded-xl cursor-pointer hover:bg-gray-100 transition">
+            <input type="checkbox" checked={cekBodi} onChange={e => setCekBodi(e.target.checked)} className="w-5 h-5 rounded text-blue-600" />
+            <span className="text-sm font-medium text-gray-800">Pemeriksaan Bodi (Tanpa baret/penyok baru)</span>
+          </label>
+          <label className="flex items-center space-x-3 p-3 bg-gray-50 border rounded-xl cursor-pointer hover:bg-gray-100 transition">
+            <input type="checkbox" checked={cekInterior} onChange={e => setCekInterior(e.target.checked)} className="w-5 h-5 rounded text-blue-600" />
+            <span className="text-sm font-medium text-gray-800">Pemeriksaan Interior (Kebersihan & fungsi kabin)</span>
+          </label>
+          <label className="flex items-center space-x-3 p-3 bg-gray-50 border rounded-xl cursor-pointer hover:bg-gray-100 transition">
+            <input type="checkbox" checked={cekBahanBakar} onChange={e => setCekBahanBakar(e.target.checked)} className="w-5 h-5 rounded text-blue-600" />
+            <span className="text-sm font-medium text-gray-800">Pemeriksaan Bahan Bakar (Sesuai kondisi awal)</span>
+          </label>
+          <label className="flex items-center space-x-3 p-3 bg-gray-50 border rounded-xl cursor-pointer hover:bg-gray-100 transition">
+            <input type="checkbox" checked={cekKelengkapan} onChange={e => setCekKelengkapan(e.target.checked)} className="w-5 h-5 rounded text-blue-600" />
+            <span className="text-sm font-medium text-gray-800">Kelengkapan Dokumen (STNK & Kunci Asli)</span>
+          </label>
+        </div>
+      </div>
+
+      {/* Tombol Aksi */}
+      <div className="flex justify-end pt-4">
+        <button 
+          onClick={handleSelesaikan}
+          disabled={isPending || !semuaDicentang}
+          className="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-200 transition flex items-center disabled:bg-gray-300 disabled:shadow-none"
+        >
+          <Undo2 size={18} className="mr-2" />
+          {isPending ? 'Menyelesaikan Transaksi...' : 'Selesaikan Transaksi & Bebaskan Kendaraan'}
+        </button>
+      </div>
+    </div>
+  );
+}
 ```
 
 ### FILE: src\app\staf\pengembalian\page.tsx
 ```tsx
-interface PageProps {
-  params: Promise<{ id_transaksi: string }>;
-}
+import Link from 'next/link';
+import { ambilDaftarPengembalian } from '@/app/actions/staf';
+import { formatTanggal } from '@/lib/formatters';
+import { Undo2, ArrowRight, AlertTriangle } from 'lucide-react';
 
-export default async function Page({ params }: PageProps) {
-  const { id_transaksi } = await params;
+export const dynamic = 'force-dynamic';
+
+export default async function PengembalianPage() {
+  const data = await ambilDaftarPengembalian();
+  const today = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="bg-white p-12 text-center rounded-xl border border-dashed border-gray-300">
-      <h2 className="text-xl font-bold text-gray-900 mb-2">Halaman Detail Pengembalian Sementara</h2>
-      <p className="text-gray-500 mb-4">Fitur denda keterlambatan dan kerusakan akan dikerjakan pada Tahap 12.</p>
-      <div className="inline-block bg-gray-100 text-gray-600 px-3 py-1 rounded-md text-sm font-mono">
-        ID Transaksi: {id_transaksi}
+    <div className="space-y-6">
+      <div className="flex items-center space-x-3">
+        <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><Undo2 size={24} /></div>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Proses Pengembalian Kendaraan</h1>
+          <p className="text-gray-500 text-sm mt-1">Daftar transaksi berjalan yang harus dikembalikan atau diperiksa dendanya.</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-gray-50 border-b">
+            <tr>
+              <th className="px-6 py-4">ID Transaksi</th>
+              <th className="px-6 py-4">Pelanggan</th>
+              <th className="px-6 py-4">Kendaraan</th>
+              <th className="px-6 py-4">Jadwal Kembali</th>
+              <th className="px-6 py-4">Status Keterlambatan</th>
+              <th className="px-6 py-4 text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {data.length === 0 ? (
+              <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">Tidak ada kendaraan yang sedang disewa (berjalan).</td></tr>
+            ) : (
+              data.map((t: any) => {
+                const isLate = t.tanggal_kembali < today;
+                return (
+                  <tr key={t.id_transaksi} className={`hover:bg-gray-50 ${isLate ? 'bg-red-50/50' : ''}`}>
+                    <td className="px-6 py-4 font-mono text-gray-600">{t.id_transaksi.split('-')[0].toUpperCase()}</td>
+                    <td className="px-6 py-4 font-semibold">{t.pemesanan?.users?.nama}</td>
+                    <td className="px-6 py-4">{t.kendaraan?.nama_kendaraan}</td>
+                    <td className="px-6 py-4">{formatTanggal(t.tanggal_kembali).split(',')[0]}</td>
+                    <td className="px-6 py-4">
+                      {isLate ? (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                          <AlertTriangle size={12} className="mr-1" /> Terlambat
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                          Tepat Waktu / Aktif
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <Link href={`/staf/pengembalian/${t.id_transaksi}`} className="inline-flex items-center text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 font-medium">
+                        Proses <ArrowRight size={16} className="ml-1" />
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -5258,7 +5993,7 @@ const stafMenus = [
   { label: 'Transaksi Walk-in', href: '/staf/walk-in', icon: Store },
   { label: 'Proses Serah Terima', href: '/staf/serah-terima', icon: KeyRound },
   { label: 'Proses Pengembalian', href: '/staf/pengembalian', icon: Undo2 },
-  { label: 'Cetak Dokumen', href: '/staf/cetak/placeholder', icon: Printer },
+  { label: 'Cetak Dokumen', href: '/staf/cetak', icon: Printer },
 ];
 
 export default function DashboardLayout({ 
@@ -5735,6 +6470,21 @@ export const DENDA_PERSEN_PER_HARI = 10;
 
 // Batas waktu kadaluarsa pembayaran Midtrans Snap (dalam menit)
 export const SNAP_EXPIRY_MENIT = 60;
+
+// ------------------------------------------------------------------
+// KONSTANTA TEMPLATE SURAT PERJANJIAN (TAHAP 12)
+// Silakan isi nilai kosong ("") di bawah ini dengan data asli perusahaan
+// ------------------------------------------------------------------
+export const PENANDATANGAN_NAMA = "Susiana Retno Wulandari"; // Contoh: "Budi Santoso"
+export const PENANDATANGAN_PEKERJAAN = "Wiraswasta"; // Contoh: "Wiraswasta"
+export const PENANDATANGAN_JABATAN = "Direktur Utama"; // Contoh: "Manajer Operasional"
+export const PENANDATANGAN_ALAMAT = "Jl. Sisingamangaraja No. 35b, Pekanbaru, Riau"; // Contoh: "Jl. Sudirman No. 123, Pekanbaru"
+export const PENANDATANGAN_KTP = "1471234567890001"; // Contoh: "1471234567890001"
+export const PENANDATANGAN_TELEPON = "081234567890"; // Contoh: "081234567890"
+
+export const BATAS_HARI_PENARIKAN = "3"; // Contoh: "3"
+export const PENGADILAN_NEGERI = "Pengadilan Negeri Pekanbaru"; // Contoh: "Pengadilan Negeri Pekanbaru"
+export const TEMPAT_PENANDATANGANAN = "Pekanbaru"; // Contoh: "Pekanbaru"
 ```
 
 ### FILE: src\lib\formatters.ts
@@ -5918,6 +6668,226 @@ export async function createAdminClient() {
       }
     }
   );
+}
+```
+
+### FILE: src\lib\surat-perjanjian.ts
+```ts
+// PERLU DITINJAU AHLI HUKUM pada:
+// - Pasal 1 ayat 2
+// - Pasal 3 ayat 3
+// - Pasal 4 ayat 3
+// - Pasal 5 ayat 2
+// - Pasal 6
+// - Pasal 8 ayat 5
+// - Pasal 10
+// - Pasal 12 ayat 1
+
+export const TEMPLATE_SURAT_PERJANJIAN = `
+<div class="text-justify text-[12pt] leading-relaxed font-serif">
+  <p class="mb-4">
+    Pada hari ini ({{hari_surat}}), tanggal [({{tanggal_angka}}) ({{tanggal_huruf}})] bulan ({{bulan_surat}}) tahun [({{tahun_angka}}) ({{tahun_huruf}})], yang bertanda tangan di bawah ini:
+  </p>
+
+  <table class="w-full mb-4">
+    <tr><td class="w-8 align-top">1.</td><td class="w-40 align-top">Nama</td><td class="w-4 align-top">:</td><td>{{p1_nama}}</td></tr>
+    <tr><td></td><td class="align-top">Pekerjaan</td><td class="align-top">:</td><td>{{p1_pekerjaan}}</td></tr>
+    <tr><td></td><td class="align-top">Jabatan</td><td class="align-top">:</td><td>{{p1_jabatan}}</td></tr>
+    <tr><td></td><td class="align-top">Alamat</td><td class="align-top">:</td><td>{{p1_alamat}}</td></tr>
+    <tr><td></td><td class="align-top">Nomor KTP / SIM</td><td class="align-top">:</td><td>{{p1_ktp}}</td></tr>
+    <tr><td></td><td class="align-top">Telepon</td><td class="align-top">:</td><td>{{p1_telepon}}</td></tr>
+  </table>
+  <p class="mb-6 ml-8">
+    Dalam hal ini bertindak untuk dan atas nama perusahaan ({{perusahaan_nama}}) yang berkedudukan di ({{perusahaan_alamat}}) dan selanjutnya disebut <b>PIHAK PERTAMA</b>.
+  </p>
+
+  <table class="w-full mb-4">
+    <tr><td class="w-8 align-top">2.</td><td class="w-40 align-top">Nama</td><td class="w-4 align-top">:</td><td>{{p2_nama}}</td></tr>
+    <tr><td></td><td class="align-top">Pekerjaan</td><td class="align-top">:</td><td>{{p2_pekerjaan}}</td></tr>
+    <tr><td></td><td class="align-top">Jabatan</td><td class="align-top">:</td><td>{{p2_jabatan}}</td></tr>
+    <tr><td></td><td class="align-top">Alamat</td><td class="align-top">:</td><td>{{p2_alamat}}</td></tr>
+    <tr><td></td><td class="align-top">Nomor KTP / SIM</td><td class="align-top">:</td><td>{{p2_ktp}}</td></tr>
+    <tr><td></td><td class="align-top">Telepon</td><td class="align-top">:</td><td>{{p2_telepon}}</td></tr>
+  </table>
+  <p class="mb-6 ml-8">
+    Dalam hal ini bertindak untuk dan atas nama diri pribadi dan selanjutnya disebut <b>PIHAK KEDUA</b>.
+  </p>
+
+  <p class="mb-4">
+    Kedua belah pihak dengan ini menerangkan bahwa <b>PIHAK PERTAMA</b> selaku pemilik sah telah setuju untuk menyewakan kepada <b>PIHAK KEDUA</b>, dan <b>PIHAK KEDUA</b> telah setuju untuk menyewa dari <b>PIHAK PERTAMA</b>, berupa:
+  </p>
+
+  <table class="w-full mb-6 ml-4">
+    <tr><td class="w-6 align-top">1.</td><td class="w-48 align-top">Jenis kendaraan</td><td class="w-4 align-top">:</td><td>MOBIL</td></tr>
+    <tr><td class="align-top">2.</td><td class="align-top">Merek / Type</td><td class="align-top">:</td><td>{{kendaraan_merek}}</td></tr>
+    <tr><td class="align-top">3.</td><td class="align-top">Tahun pembuatan</td><td class="align-top">:</td><td>{{kendaraan_tahun}}</td></tr>
+    <tr><td class="align-top">4.</td><td class="align-top">Nomor Polisi</td><td class="align-top">:</td><td>{{kendaraan_plat}}</td></tr>
+    <tr><td class="align-top">5.</td><td class="align-top">Nomor BPKB</td><td class="align-top">:</td><td>{{kendaraan_bpkb}}</td></tr>
+    <tr><td class="align-top">6.</td><td class="align-top">Nomor rangka</td><td class="align-top">:</td><td>{{kendaraan_rangka}}</td></tr>
+    <tr><td class="align-top">7.</td><td class="align-top">Nomor mesin</td><td class="align-top">:</td><td>{{kendaraan_mesin}}</td></tr>
+    <tr><td class="align-top">8.</td><td class="align-top">Warna</td><td class="align-top">:</td><td>{{kendaraan_warna}}</td></tr>
+    <tr><td class="align-top">9.</td><td class="align-top">Kondisi barang</td><td class="align-top">:</td><td>{{kendaraan_kondisi}}</td></tr>
+  </table>
+  <p class="mb-6">Untuk selanjutnya disebut <b>KENDARAAN</b>.</p>
+
+  <p class="mb-8">
+    Selanjutnya kedua belah pihak bersepakat bahwa perjanjian sewa-menyewa <b>KENDARAAN</b> antara <b>PIHAK PERTAMA</b> dan <b>PIHAK KEDUA</b> ini berlaku sejak tanggal penandatanganan surat perjanjian ini, dimana syarat-syarat serta ketentuan-ketentuan dalam surat perjanjian ini diatur dalam 12 (dua belas) pasal, sebagai berikut:
+  </p>
+
+  <div class="break-inside-avoid mb-6">
+    <div class="text-center font-bold mb-2">PASAL 1 - MASA BERLAKUNYA PERJANJIAN SEWA</div>
+    <div class="flex"><div class="w-20 font-bold shrink-0">Ayat 1:</div><div>Sewa-menyewa ini dilangsungkan dan diterima untuk jangka waktu [({{jumlah_hari}}) ({{jumlah_hari_huruf}})] hari, terhitung sejak tanggal ({{tanggal_sewa_lengkap}}) dan berakhir pada tanggal ({{tanggal_kembali_lengkap}}).</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 2:</div><div><b>KENDARAAN</b> digunakan oleh <b>PIHAK KEDUA</b> untuk perjalanan dengan rute ({{rute_perjalanan}}). <b>KENDARAAN</b> diperuntukkan bagi penggunaan ({{rute_peruntukan_label}}), dan penggunaan di luar rute atau peruntukan tersebut hanya diperbolehkan dengan persetujuan <b>PIHAK PERTAMA</b>.</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 3:</div><div>Perpanjangan masa sewa hanya dapat dilakukan atas persetujuan <b>PIHAK PERTAMA</b> dan wajib diajukan sebelum masa sewa berakhir, dengan jangka waktu serta ketentuan yang dituangkan dalam kesepakatan tertulis tersendiri.</div></div>
+  </div>
+
+  <div class="break-inside-avoid mb-6">
+    <div class="text-center font-bold mb-2">PASAL 2 - HARGA SEWA DAN PEMBAYARAN</div>
+    <div class="flex"><div class="w-20 font-bold shrink-0">Ayat 1:</div><div>Harga sewa <b>KENDARAAN</b> adalah [(Rp {{harga_per_hari}},00) ({{harga_per_hari_huruf}})] per hari, sehingga untuk seluruh jangka waktu sewa berjumlah [(Rp {{total_harga}},00) ({{total_harga_huruf}})].</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 2:</div><div>Harga sewa tersebut telah dibayarkan lunas oleh <b>PIHAK KEDUA</b> kepada <b>PIHAK PERTAMA</b> sebelum penyerahan <b>KENDARAAN</b> melalui ({{metode_pembayaran_label}}) dan tercatat pada sistem pencatatan transaksi <b>PIHAK PERTAMA</b>.</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 3:</div><div>Kwitansi pembayaran yang diterbitkan <b>PIHAK PERTAMA</b> berlaku sebagai bukti pelunasan yang sah atas sejumlah uang sewa <b>KENDARAAN</b> termaksud.</div></div>
+  </div>
+
+  <div class="break-inside-avoid mb-6">
+    <div class="text-center font-bold mb-2">PASAL 3 - PENYERAHAN KENDARAAN</div>
+    <div class="flex"><div class="w-20 font-bold shrink-0">Ayat 1:</div><div><b>PIHAK PERTAMA</b> menyerahkan <b>KENDARAAN</b> kepada <b>PIHAK KEDUA</b> setelah <b>PIHAK PERTAMA</b> memverifikasi Kartu Tanda Penduduk dan Surat Izin Mengemudi asli milik <b>PIHAK KEDUA</b> serta setelah Surat Perjanjian ini ditandatangani oleh kedua belah pihak.</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 2:</div><div>Penyerahan dilakukan berikut Surat Tanda Nomor Kendaraan (STNK) atau salinannya yang sah, dan kondisi <b>KENDARAAN</b> diperiksa bersama oleh kedua belah pihak serta dicatat pada bagian "Kondisi barang" dalam Surat Perjanjian ini.</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 3:</div><div><b>KENDARAAN</b> hanya boleh dikemudikan oleh <b>PIHAK KEDUA</b> atau pengemudi lain yang memiliki Surat Izin Mengemudi yang masih berlaku dan sepengetahuan <b>PIHAK PERTAMA</b>, dan <b>PIHAK KEDUA</b> bertanggung jawab penuh atas setiap pengemudi yang ditunjuknya.</div></div>
+  </div>
+
+  <div class="break-inside-avoid mb-6">
+    <div class="text-center font-bold mb-2">PASAL 4 - KETENTUAN-KETENTUAN KHUSUS</div>
+    <div class="flex"><div class="w-20 font-bold shrink-0">Ayat 1:</div><div><b>PIHAK PERTAMA</b> wajib menyerahkan <b>KENDARAAN</b> dalam keadaan layak jalan dan sesuai dengan data yang tercantum dalam Surat Perjanjian ini.</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 2:</div><div>Sebelum jangka waktu sewa berakhir, <b>PIHAK PERTAMA</b> tidak dibenarkan meminta <b>PIHAK KEDUA</b> untuk mengakhiri sewa atau mengembalikan <b>KENDARAAN</b>, kecuali terdapat kesepakatan kedua belah pihak atau terjadi pelanggaran sebagaimana dimaksud dalam Pasal 9.</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 3:</div><div><b>PIHAK PERTAMA</b> tidak diperbolehkan memungut uang sewa tambahan dari <b>PIHAK KEDUA</b> dengan alasan atau dalih apa pun, kecuali denda keterlambatan sebagaimana diatur dalam Pasal 6 serta biaya kerusakan, kehilangan, dan penarikan <b>KENDARAAN</b> sebagaimana diatur dalam Pasal 8 dan Pasal 9.</div></div>
+  </div>
+
+  <div class="break-inside-avoid mb-6">
+    <div class="text-center font-bold mb-2">PASAL 5 - HAK DAN TANGGUNG JAWAB PIHAK KEDUA</div>
+    <div class="flex"><div class="w-20 font-bold shrink-0">Ayat 1:</div><div><b>PIHAK KEDUA</b> berhak sepenuhnya untuk menggunakan <b>KENDARAAN</b> yang disewanya selama jangka waktu sewa sesuai dengan Perjanjian ini.</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 2:</div><div>Mengingat <b>KENDARAAN</b> dipegang oleh <b>PIHAK KEDUA</b> sebagai penyewa, <b>PIHAK KEDUA</b> bertanggung jawab penuh untuk merawat dan menjaga keutuhan serta kebaikan kondisi <b>KENDARAAN</b> sebaik-baiknya atas biaya <b>PIHAK KEDUA</b> sendiri, termasuk biaya bahan bakar dan biaya operasional selama masa sewa seperti tol dan parkir.</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 3:</div><div>Apabila perjanjian sewa-menyewa ini berakhir, <b>PIHAK KEDUA</b> wajib mengembalikan <b>KENDARAAN</b> kepada <b>PIHAK PERTAMA</b> dalam keadaan jalan, terawat baik, dan kondisinya lengkap seperti ketika <b>PIHAK KEDUA</b> menerimanya dari <b>PIHAK PERTAMA</b>.</div></div>
+  </div>
+
+  <div class="break-inside-avoid mb-6">
+    <div class="text-center font-bold mb-2">PASAL 6 - KETERLAMBATAN PENGEMBALIAN DAN DENDA</div>
+    <div class="flex"><div class="w-20 font-bold shrink-0">Ayat 1:</div><div><b>PIHAK KEDUA</b> wajib mengembalikan <b>KENDARAAN</b> paling lambat pada tanggal ({{tanggal_kembali_lengkap}}).</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 2:</div><div>Apabila <b>PIHAK KEDUA</b> terlambat mengembalikan <b>KENDARAAN</b>, <b>PIHAK KEDUA</b> dikenakan denda keterlambatan sebesar [({{denda_persen}}%) ({{denda_persen_huruf}} persen)] dari harga sewa harian, yaitu [(Rp {{denda_per_hari}},00) ({{denda_per_hari_huruf}})] untuk setiap hari keterlambatan.</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 3:</div><div>Jumlah hari keterlambatan dihitung berdasarkan selisih antara tanggal pengembalian sebenarnya yang dicatat oleh petugas <b>PIHAK PERTAMA</b> dan tanggal berakhirnya masa sewa, dan denda dibayarkan oleh <b>PIHAK KEDUA</b> pada saat pengembalian <b>KENDARAAN</b>.</div></div>
+  </div>
+
+  <div class="break-inside-avoid mb-6">
+    <div class="text-center font-bold mb-2">PASAL 7 - LARANGAN-LARANGAN</div>
+    <div class="flex"><div class="w-20 font-bold shrink-0">Ayat 1:</div><div>Status kepemilikan <b>KENDARAAN</b> sepenuhnya tetap berada di tangan <b>PIHAK PERTAMA</b>, sehingga <b>PIHAK KEDUA</b> dilarang melakukan perbuatan yang bertujuan untuk memindahtangankan kepemilikan atau penguasaan <b>KENDARAAN</b>, seperti:
+      <ol class="list-decimal pl-6 mt-1">
+        <li>menjual;</li>
+        <li>menggadaikan;</li>
+        <li>menyewakan kembali atau meminjamkan kepada pihak lain tanpa persetujuan <b>PIHAK PERTAMA</b>;</li>
+        <li>memindahtangankan atau melakukan perbuatan lain yang bertujuan untuk memindahtangankan kepemilikannya.</li>
+      </ol>
+    </div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 2:</div><div><b>PIHAK KEDUA</b> dilarang menggunakan <b>KENDARAAN</b> untuk perbuatan yang melanggar hukum serta dilarang mengubah bentuk atau komponen <b>KENDARAAN</b> tanpa persetujuan <b>PIHAK PERTAMA</b>.</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 3:</div><div>Pelanggaran <b>PIHAK KEDUA</b> atas pasal ini merupakan tindak pidana sesuai dengan ketentuan hukum pidana yang berlaku, dan <b>PIHAK PERTAMA</b> berhak menempuh upaya hukum.</div></div>
+  </div>
+
+  <div class="break-inside-avoid mb-6">
+    <div class="text-center font-bold mb-2">PASAL 8 - KERUSAKAN, KEHILANGAN, DAN PELANGGARAN LALU LINTAS</div>
+    <div class="flex"><div class="w-20 font-bold shrink-0">Ayat 1:</div><div>Apabila terjadi kerusakan pada <b>KENDARAAN</b> selama masa sewa, <b>PIHAK KEDUA</b> diharuskan memperbaiki atau menanggung biaya perbaikan atas kerusakan tersebut sehubungan dengan pemakaiannya.</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 2:</div><div><b>PIHAK KEDUA</b> diwajibkan mengganti suku cadang (spare part) <b>KENDARAAN</b> yang rusak akibat pemakaian sehingga tidak dapat digunakan lagi dengan suku cadang yang sama.</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 3:</div><div><b>PIHAK KEDUA</b> dibebaskan dari segala ganti rugi atau tuntutan <b>PIHAK PERTAMA</b> akibat kerusakan pada <b>KENDARAAN</b> yang diakibatkan oleh force majeure. Yang dimaksud dengan force majeure adalah:
+      <ol class="list-decimal pl-6 mt-1">
+        <li>bencana alam, seperti banjir, gempa bumi, tanah longsor, petir, angin topan, serta kebakaran yang disebabkan oleh faktor eksternal di luar kendali <b>PIHAK KEDUA</b>;</li>
+        <li>huru-hara, kerusuhan, pemberontakan, dan perang.</li>
+      </ol>
+    </div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 4:</div><div>Apabila terjadi kehilangan <b>KENDARAAN</b> karena kelalaian <b>PIHAK KEDUA</b> sendiri, <b>PIHAK KEDUA</b> diharuskan mengganti dengan <b>KENDARAAN</b> sejenis dengan tahun pembuatan dan kondisi yang sesuai atau sebanding dengan <b>KENDARAAN</b> yang disewanya.</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 5:</div><div>Segala denda, tilang, atau sanksi atas pelanggaran lalu lintas yang terjadi selama masa sewa menjadi tanggung jawab <b>PIHAK KEDUA</b>, dan <b>PIHAK KEDUA</b> wajib segera memberitahukan <b>PIHAK PERTAMA</b> apabila terjadi kecelakaan, kerusakan berat, atau kehilangan.</div></div>
+  </div>
+
+  <div class="break-inside-avoid mb-6">
+    <div class="text-center font-bold mb-2">PASAL 9 - PEMBATALAN</div>
+    <div class="flex"><div class="w-20 font-bold shrink-0">Ayat 1:</div><div>Apabila <b>PIHAK KEDUA</b> melakukan pelanggaran atau tidak menaati Perjanjian ini, <b>PIHAK PERTAMA</b> berhak meminta perjanjian ini dibatalkan.</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 2:</div><div><b>PIHAK PERTAMA</b> diharuskan memberitahukan pembatalan tersebut secara tertulis kepada <b>PIHAK KEDUA</b>, dan <b>PIHAK KEDUA</b> diwajibkan menyerahkan kembali <b>KENDARAAN</b> yang disewanya selambat-lambatnya [({{batas_hari_penarikan}}) ({{batas_hari_penarikan_huruf}})] hari setelah pemberitahuan pembatalan diterima.</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 3:</div><div><b>PIHAK KEDUA</b> memberi kuasa penuh kepada <b>PIHAK PERTAMA</b>, dengan hak substitusi, untuk mengambil <b>KENDARAAN</b> milik <b>PIHAK PERTAMA</b>, baik yang berada di tempat <b>PIHAK KEDUA</b> maupun di tempat pihak lain yang mendapat hak darinya.</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 4:</div><div><b>PIHAK PERTAMA</b> berhak meminta bantuan pihak berwajib untuk menarik kembali <b>KENDARAAN</b> tersebut, dan segala biaya pengambilan <b>KENDARAAN</b> sepenuhnya menjadi beban dan tanggung jawab <b>PIHAK KEDUA</b>.</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 5:</div><div><b>PIHAK KEDUA</b> membebaskan <b>PIHAK PERTAMA</b> dari tuntutan kerugian dari <b>PIHAK KEDUA</b> atas pembatalan Perjanjian ini yang diakibatkan oleh pelanggaran <b>PIHAK KEDUA</b>.</div></div>
+  </div>
+
+  <div class="break-inside-avoid mb-6">
+    <div class="text-center font-bold mb-2">PASAL 10 - PELANGGARAN DARI PIHAK PERTAMA</div>
+    <div class="flex"><div class="w-20 font-bold shrink-0">Ayat 1:</div><div>Apabila <b>PIHAK PERTAMA</b> melakukan pelanggaran atau tidak menaati Perjanjian ini, <b>PIHAK PERTAMA</b> wajib memberikan atau membayar ganti rugi kepada <b>PIHAK KEDUA</b>.</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 2:</div><div>Besarnya ganti rugi sesuai ayat 1 pasal ini ditetapkan secara musyawarah untuk mufakat oleh kedua belah pihak berdasarkan kerugian nyata yang dialami <b>PIHAK KEDUA</b>.</div></div>
+  </div>
+
+  <div class="break-inside-avoid mb-6">
+    <div class="text-center font-bold mb-2">PASAL 11 - LAIN-LAIN</div>
+    <p>Hal-hal yang belum tercantum dalam Perjanjian ini akan diselesaikan secara kekeluargaan atau musyawarah untuk mufakat oleh kedua belah pihak, dan setiap perubahan atas Perjanjian ini hanya sah apabila dibuat secara tertulis serta disetujui oleh kedua belah pihak.</p>
+  </div>
+
+  <div class="break-inside-avoid mb-8">
+    <div class="text-center font-bold mb-2">PASAL 12 - PENYELESAIAN PERSELISIHAN DAN PENUTUP</div>
+    <div class="flex"><div class="w-20 font-bold shrink-0">Ayat 1:</div><div>Apabila terjadi perselisihan dan tidak dapat diselesaikan secara kekeluargaan atau musyawarah untuk mufakat, kedua belah pihak bersepakat untuk menyelesaikannya secara hukum dan telah sepakat memilih tempat kedudukan hukum yang umum dan tetap di Kantor Kepaniteraan ({{pengadilan_negeri}}).</div></div>
+    <div class="flex mt-2"><div class="w-20 font-bold shrink-0">Ayat 2:</div><div>Surat Perjanjian ini dibuat rangkap 2 (dua) dengan dibubuhi meterai secukupnya, yang masing-masing mempunyai kekuatan hukum yang sama dan dipegang oleh <b>PIHAK PERTAMA</b> dan <b>PIHAK KEDUA</b>, serta mulai berlaku sejak ditandatangani oleh kedua belah pihak.</div></div>
+  </div>
+
+  <div class="break-inside-avoid mt-8 pt-4">
+    <div class="text-center mb-8">({{tempat_penandatanganan}}, {{tanggal_sewa_lengkap}})</div>
+    <div class="grid grid-cols-2 text-center">
+      <div>
+        <p class="font-bold mb-24">PIHAK PERTAMA</p>
+        <p>[ {{p1_nama}} ]</p>
+      </div>
+      <div>
+        <p class="font-bold mb-4">PIHAK KEDUA</p>
+        <div class="mx-auto border border-dashed border-gray-400 w-28 h-12 flex items-center justify-center text-[10px] text-gray-500 mb-8">
+          Meterai<br/>Rp10.000
+        </div>
+        <p>[ {{p2_nama}} ]</p>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+```
+
+### FILE: src\lib\terbilang.ts
+```ts
+export function terbilang(angka: number): string {
+  const huruf = ["", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh", "sebelas"];
+  let hasil = "";
+
+  if (angka < 12) {
+    hasil = huruf[angka];
+  } else if (angka < 20) {
+    hasil = terbilang(angka - 10) + " belas";
+  } else if (angka < 100) {
+    hasil = terbilang(Math.floor(angka / 10)) + " puluh " + terbilang(angka % 10);
+  } else if (angka < 200) {
+    hasil = "seratus " + terbilang(angka - 100);
+  } else if (angka < 1000) {
+    hasil = terbilang(Math.floor(angka / 100)) + " ratus " + terbilang(angka % 100);
+  } else if (angka < 2000) {
+    hasil = "seribu " + terbilang(angka - 1000);
+  } else if (angka < 1000000) {
+    hasil = terbilang(Math.floor(angka / 1000)) + " ribu " + terbilang(angka % 1000);
+  } else if (angka < 1000000000) {
+    hasil = terbilang(Math.floor(angka / 1000000)) + " juta " + terbilang(angka % 1000000);
+  }
+
+  return hasil.trim();
+}
+
+export function namaHariIndonesia(indexHari: number): string {
+  const hari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+  return hari[indexHari] || "";
+}
+
+export function namaBulanIndonesia(indexBulan: number): string {
+  const bulan = [
+    "Januari", "Februari", "Maret", "April", "Mei", "Juni", 
+    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+  ];
+  return bulan[indexBulan] || "";
 }
 ```
 
