@@ -32,3 +32,18 @@ export const DENDA_PERSEN_PER_HARI = 10;
 
 // Batas waktu kadaluarsa pembayaran Midtrans Snap (dalam menit)
 export const SNAP_EXPIRY_MENIT = 60;
+
+// ------------------------------------------------------------------
+// KONSTANTA TEMPLATE SURAT PERJANJIAN (TAHAP 12)
+// Silakan isi nilai kosong ("") di bawah ini dengan data asli perusahaan
+// ------------------------------------------------------------------
+export const PENANDATANGAN_NAMA = "Susiana Retno Wulandari"; // Contoh: "Budi Santoso"
+export const PENANDATANGAN_PEKERJAAN = "Wiraswasta"; // Contoh: "Wiraswasta"
+export const PENANDATANGAN_JABATAN = "Direktur Utama"; // Contoh: "Manajer Operasional"
+export const PENANDATANGAN_ALAMAT = "Jl. Sisingamangaraja No. 35b, Pekanbaru, Riau"; // Contoh: "Jl. Sudirman No. 123, Pekanbaru"
+export const PENANDATANGAN_KTP = "1471234567890001"; // Contoh: "1471234567890001"
+export const PENANDATANGAN_TELEPON = "081234567890"; // Contoh: "081234567890"
+
+export const BATAS_HARI_PENARIKAN = "3"; // Contoh: "3"
+export const PENGADILAN_NEGERI = "Pengadilan Negeri Pekanbaru"; // Contoh: "Pengadilan Negeri Pekanbaru"
+export const TEMPAT_PENANDATANGANAN = "Pekanbaru"; // Contoh: "Pekanbaru"

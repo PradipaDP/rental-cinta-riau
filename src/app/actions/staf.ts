@@ -219,3 +219,92 @@ export async function ambilDaftarPengembalian() {
     .order('tanggal_kembali', { ascending: true });
   return data || [];
 }
+
+// 9. Proses Pengembalian (Read Detail)
+export async function ambilDetailPengembalian(id_transaksi: string) {
+  await wajibRole(['staf']);
+  const supabase = createAdminClient();
+  
+  const { data, error } = await supabase
+    .from('transaksi')
+    .select('*, pemesanan(*, users(*), kendaraan(*))')
+    .eq('id_transaksi', id_transaksi)
+    .single();
+
+  if (error || !data) return null;
+  return data;
+}
+
+// 10. Aksi Menyelesaikan Transaksi & Pengembalian
+export async function selesaikanTransaksi(id_transaksi: string, kembaliAktual: string, dendaInput: number) {
+  await wajibRole(['staf']);
+  const supabase = createAdminClient();
+
+  // A. Ambil data asli untuk validasi ketat
+  const { data: trx } = await supabase
+    .from('transaksi')
+    .select('*, pemesanan(id_pemesanan, status_pemesanan, id_kendaraan)')
+    .eq('id_transaksi', id_transaksi)
+    .single();
+
+  if (!trx) return { error: 'Transaksi tidak ditemukan.' };
+  if (trx.status !== 'berjalan' || trx.status_pembayaran !== 'settlement') {
+    return { error: 'Transaksi ditolak: Transaksi tidak sedang berjalan atau pembayaran belum lunas.' };
+  }
+
+  const pesanan = Array.isArray(trx.pemesanan) ? trx.pemesanan[0] : trx.pemesanan;
+  if (pesanan?.status_pemesanan !== 'diambil') {
+    return { error: 'Transaksi ditolak: Status pemesanan KENDARAAN belum ditandai diambil.' };
+  }
+
+  // B. Eksekusi Beruntun dengan Perlindungan Rollback
+  // Langkah 1: Update Transaksi
+  const { error: err1 } = await supabase.from('transaksi').update({
+    tanggal_kembali_aktual: kembaliAktual,
+    denda: dendaInput,
+    status: 'selesai'
+  }).eq('id_transaksi', id_transaksi);
+  
+  if (err1) return { error: 'Gagal memperbarui data transaksi: ' + err1.message };
+
+  // Langkah 2: Update Pemesanan
+  const { error: err2 } = await supabase.from('pemesanan').update({
+    status_pemesanan: 'selesai'
+  }).eq('id_pemesanan', pesanan.id_pemesanan);
+  
+  if (err2) {
+    // Rollback Langkah 1
+    await supabase.from('transaksi').update({ tanggal_kembali_aktual: null, denda: 0, status: 'berjalan' }).eq('id_transaksi', id_transaksi);
+    return { error: 'Gagal memperbarui pemesanan, proses dibatalkan: ' + err2.message };
+  }
+
+  // Langkah 3: Update Kendaraan
+  const { error: err3 } = await supabase.from('kendaraan').update({
+    status: 'tersedia'
+  }).eq('id_kendaraan', pesanan.id_kendaraan);
+  
+  if (err3) {
+    // Rollback Langkah 1 dan 2
+    await supabase.from('pemesanan').update({ status_pemesanan: 'diambil' }).eq('id_pemesanan', pesanan.id_pemesanan);
+    await supabase.from('transaksi').update({ tanggal_kembali_aktual: null, denda: 0, status: 'berjalan' }).eq('id_transaksi', id_transaksi);
+    return { error: 'Gagal membebaskan kendaraan, proses dibatalkan: ' + err3.message };
+  }
+
+  revalidatePath('/staf');
+  revalidatePath('/staf/pengembalian');
+  return { success: true };
+}
+
+// 11. Daftar Transaksi untuk Cetak (Hanya yang Settlement)
+export async function ambilDaftarCetak() {
+  await wajibRole(['staf']);
+  const supabase = createAdminClient();
+  
+  const { data } = await supabase
+    .from('transaksi')
+    .select('*, pemesanan(id_pemesanan, rute_perjalanan, users(nama), kendaraan(nama_kendaraan, plat_nomor))')
+    .eq('status_pembayaran', 'settlement')
+    .order('created_at', { ascending: false });
+
+  return data || [];
+}

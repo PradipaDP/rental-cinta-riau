@@ -24,7 +24,7 @@ const stafMenus = [
   { label: 'Transaksi Walk-in', href: '/staf/walk-in', icon: Store },
   { label: 'Proses Serah Terima', href: '/staf/serah-terima', icon: KeyRound },
   { label: 'Proses Pengembalian', href: '/staf/pengembalian', icon: Undo2 },
-  { label: 'Cetak Dokumen', href: '/staf/cetak/placeholder', icon: Printer },
+  { label: 'Cetak Dokumen', href: '/staf/cetak', icon: Printer },
 ];
 
 export default function DashboardLayout({ 

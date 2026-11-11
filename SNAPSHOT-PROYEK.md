@@ -1,6 +1,6 @@
-# SNAPSHOT PROYEK rental-cinta-riau (2026-11-10 19:29)
+# SNAPSHOT PROYEK rental-cinta-riau (2026-11-11 12:53)
 
-Jumlah file dalam snapshot: 61
+Jumlah file dalam snapshot: 71
 TIDAK termasuk: node_modules, .next, .env.local (rahasia), package-lock.json, gambar/aset di folder public.
 
 ## Daftar file yang ada di snapshot
@@ -28,6 +28,7 @@ TIDAK termasuk: node_modules, .next, .env.local (rahasia), package-lock.json, ga
 - src\app\actions\pelanggan-riwayat.ts
 - src\app\actions\pelanggan-transaksi.ts
 - src\app\actions\publik-kendaraan.ts
+- src\app\actions\staf.ts
 - src\app\actions\super-admin.ts
 - src\app\admin\kendaraan\KendaraanClient.tsx
 - src\app\admin\kendaraan\page.tsx
@@ -41,8 +42,17 @@ TIDAK termasuk: node_modules, .next, .env.local (rahasia), package-lock.json, ga
 - src\app\globals.css
 - src\app\layout.tsx
 - src\app\page.tsx
+- src\app\staf\ketersediaan\KetersediaanClient.tsx
+- src\app\staf\ketersediaan\page.tsx
 - src\app\staf\layout.tsx
 - src\app\staf\page.tsx
+- src\app\staf\pengembalian\[id_transaksi]\page.tsx
+- src\app\staf\pengembalian\page.tsx
+- src\app\staf\serah-terima\[id_pemesanan]\page.tsx
+- src\app\staf\serah-terima\[id_pemesanan]\SerahTerimaClient.tsx
+- src\app\staf\serah-terima\page.tsx
+- src\app\staf\walk-in\page.tsx
+- src\app\staf\walk-in\WalkInClient.tsx
 - src\app\super-admin\layout.tsx
 - src\app\super-admin\page.tsx
 - src\app\super-admin\UserManagementClient.tsx
@@ -118,6 +128,7 @@ D:\SKRIPSI\RENTAL-CINTA-RIAU\RENTAL-CINTA-RIAU\SRC
 |   |       pelanggan-riwayat.ts
 |   |       pelanggan-transaksi.ts
 |   |       publik-kendaraan.ts
+|   |       staf.ts
 |   |       super-admin.ts
 |   |       
 |   +---admin
@@ -148,9 +159,30 @@ D:\SKRIPSI\RENTAL-CINTA-RIAU\RENTAL-CINTA-RIAU\SRC
 |   |               route.ts
 |   |               
 |   +---staf
-|   |       layout.tsx
-|   |       page.tsx
-|   |       
+|   |   |   layout.tsx
+|   |   |   page.tsx
+|   |   |   
+|   |   +---ketersediaan
+|   |   |       KetersediaanClient.tsx
+|   |   |       page.tsx
+|   |   |       
+|   |   +---pengembalian
+|   |   |   |   page.tsx
+|   |   |   |   
+|   |   |   \---[id_transaksi]
+|   |   |           page.tsx
+|   |   |           
+|   |   +---serah-terima
+|   |   |   |   page.tsx
+|   |   |   |   
+|   |   |   \---[id_pemesanan]
+|   |   |           page.tsx
+|   |   |           SerahTerimaClient.tsx
+|   |   |           
+|   |   \---walk-in
+|   |           page.tsx
+|   |           WalkInClient.tsx
+|   |           
 |   \---super-admin
 |           layout.tsx
 |           page.tsx
@@ -503,7 +535,12 @@ export default eslintConfig;
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Tambahkan pengaturan batas memori Server Actions di sini
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '5mb',
+    },
+  },
   turbopack: {
     rules: {
       "*.css": {
@@ -1073,60 +1110,35 @@ export default function PencarianPintarClient({ semuaKatalog }: { semuaKatalog: 
 
 ### FILE: src\app\(pelanggan)\riwayat\page.tsx
 ```tsx
-import { ReactNode } from 'react';
-import Link from 'next/link';
-import { LogOut, Car, Clock } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
+import { ambilRiwayatPemesanan } from '@/app/actions/pelanggan-riwayat';
+import RiwayatClient from './RiwayatClient';
 
-export default async function PelangganLayout({ children }: { children: ReactNode }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+export const dynamic = 'force-dynamic';
+
+type Props = {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
+
+export default async function RiwayatPage({ searchParams }: Props) {
+  // Tunggu (await) parameter pencarian sesuai standar Next.js terbaru
+  const resolvedParams = await searchParams;
+  
+  // Tangkap nilai page dan status dari URL (atau gunakan nilai bawaan)
+  const page = typeof resolvedParams.page === 'string' ? parseInt(resolvedParams.page) : 1;
+  const status = typeof resolvedParams.status === 'string' ? resolvedParams.status : 'semua';
+
+  // Ambil data dari database melalui Server Action
+  const data = await ambilRiwayatPemesanan(page, status);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Navbar Atas */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Car className="text-blue-600 mr-2" size={28} />
-              <span className="text-xl font-extrabold text-gray-900 tracking-tight">Cinta Riau</span>
-            </div>
-            
-            <nav className="flex items-center space-x-4 md:space-x-8">
-              <Link href="/pencarian-pintar" className="text-gray-600 hover:text-blue-600 font-medium text-sm flex items-center">
-                <Car size={18} className="mr-1.5" /> <span className="hidden sm:inline">Cari Mobil</span>
-              </Link>
-              <Link href="/riwayat" className="text-gray-600 hover:text-blue-600 font-medium text-sm flex items-center">
-                <Clock size={18} className="mr-1.5" /> <span className="hidden sm:inline">Riwayat</span>
-              </Link>
-              <div className="h-6 w-px bg-gray-200 mx-2"></div>
-              {user && (
-                <span className="text-xs text-gray-500 font-medium hidden md:inline">
-                  {user.email}
-                </span>
-              )}
-              <form action="/api/auth/logout" method="POST">
-                <button type="submit" className="text-red-600 hover:text-red-700 font-medium text-sm flex items-center">
-                  <LogOut size={18} className="mr-1.5" /> <span className="hidden sm:inline">Keluar</span>
-                </button>
-              </form>
-            </nav>
-          </div>
-        </div>
-      </header>
-
-      {/* Konten Halaman */}
-      <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        {children}
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 py-6 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500">
-          &copy; {new Date().getFullYear()} PT Cinta Riau Tour & Travel. All rights reserved.
-        </div>
-      </footer>
+    <div className="max-w-5xl mx-auto space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Riwayat Pemesanan</h1>
+        <p className="text-gray-500 text-sm mt-1">Pantau status booking, pembayaran, dan dokumen penyewaan Anda di sini.</p>
+      </div>
+      
+      {/* Lempar data ke Komponen Klien untuk dirender */}
+      <RiwayatClient initialData={data} filterAktif={status} pageAktif={page} />
     </div>
   );
 }
@@ -2601,12 +2613,13 @@ export async function ambilRiwayatPemesanan(page = 1, statusFilter = 'semua') {
     let ktpUrl = null;
     let simUrl = null;
 
-    if (item.foto_ktp) {
-      const { data: ktpData } = await supabase.storage.from('dokumen').createSignedUrl(item.foto_ktp, 3600);
+    // PERBAIKAN: Menggunakan kolom ktp_url dan sim_url, serta bucket dokumen-identitas
+    if (item.ktp_url) {
+      const { data: ktpData } = await supabase.storage.from('dokumen-identitas').createSignedUrl(item.ktp_url, 3600);
       ktpUrl = ktpData?.signedUrl || null;
     }
-    if (item.foto_sim) {
-      const { data: simData } = await supabase.storage.from('dokumen').createSignedUrl(item.foto_sim, 3600);
+    if (item.sim_url) {
+      const { data: simData } = await supabase.storage.from('dokumen-identitas').createSignedUrl(item.sim_url, 3600);
       simUrl = simData?.signedUrl || null;
     }
 
@@ -2845,6 +2858,231 @@ export async function ambilDetailKendaraan(id_kendaraan: string): Promise<Kendar
 
   if (error) return null;
   return data as Kendaraan;
+}
+```
+
+### FILE: src\app\actions\staf.ts
+```ts
+'use server';
+
+import { createAdminClient } from '@/lib/supabase/admin';
+import { wajibRole } from '@/lib/auth';
+import { hitungJumlahHari } from '@/lib/formatters';
+import { revalidatePath } from 'next/cache';
+
+// 1. Dashboard: Jadwal Hari Ini
+export async function ambilJadwalHariIni() {
+  await wajibRole(['staf']);
+  const supabase = createAdminClient();
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data: pengambilan } = await supabase
+    .from('pemesanan')
+    .select('*, kendaraan(*), users(nama, no_hp)')
+    .eq('status_pemesanan', 'dibayar')
+    .lte('tanggal_sewa', today)
+    .order('tanggal_sewa', { ascending: true });
+
+  const { data: pengembalian } = await supabase
+    .from('pemesanan')
+    .select('*, kendaraan(*), users(nama, no_hp), transaksi(*)')
+    .eq('status_pemesanan', 'diambil')
+    .lte('tanggal_kembali', today)
+    .order('tanggal_kembali', { ascending: true });
+
+  return { pengambilan: pengambilan || [], pengembalian: pengembalian || [] };
+}
+
+// 2. Ketersediaan
+export async function ambilKetersediaan() {
+  await wajibRole(['staf']);
+  const supabase = createAdminClient();
+  
+  const { data: kendaraan } = await supabase.from('kendaraan').select('*').order('nama_kendaraan');
+  const { data: pemesanan } = await supabase
+    .from('pemesanan')
+    .select('id_kendaraan, tanggal_sewa, tanggal_kembali, status_pemesanan, users(nama)')
+    .in('status_pemesanan', ['menunggu_pembayaran', 'dibayar', 'diambil']);
+
+  return { kendaraan: kendaraan || [], pemesanan: pemesanan || [] };
+}
+
+// 3. Proses Transaksi Walk-in
+export async function prosesWalkIn(formData: FormData) {
+  const staf = await wajibRole(['staf']);
+  const supabase = createAdminClient();
+
+  const nama = formData.get('nama') as string;
+  const no_hp = formData.get('no_hp') as string;
+  const alamat = formData.get('alamat') as string;
+  let email = formData.get('email') as string;
+
+  let id_pelanggan = '';
+  if (!email) email = `walkin-${Date.now()}@cintariau.local`;
+  
+  const { data: existingUser } = await supabase.from('users').select('id_user').eq('email', email).single();
+  if (existingUser) {
+    id_pelanggan = existingUser.id_user;
+  } else {
+    const password = Math.random().toString(36).slice(-8) + 'Aa1!';
+    const { data: authData, error: authErr } = await supabase.auth.admin.createUser({
+      email, password, email_confirm: true,
+    });
+    if (authErr) return { error: 'Gagal membuat akun pelanggan: ' + authErr.message };
+    id_pelanggan = authData.user.id;
+    await supabase.from('users').insert({
+      id_user: id_pelanggan, nama, email, role: 'pelanggan', no_hp, alamat
+    });
+  }
+
+  const id_kendaraan = formData.get('id_kendaraan') as string;
+  const tgl_sewa = formData.get('tanggal_sewa') as string;
+  const tgl_kembali = formData.get('tanggal_kembali') as string;
+  const rute = formData.get('rute_perjalanan') as string;
+  const metode_bayar = formData.get('metode_pembayaran') as string;
+
+  const { data: mobil } = await supabase.from('kendaraan').select('*').eq('id_kendaraan', id_kendaraan).single();
+  if (!mobil || mobil.status !== 'tersedia') return { error: 'Kendaraan tidak tersedia.' };
+
+  let ktpUrl = null;
+  let simUrl = null;
+  const ktpFile = formData.get('ktp') as File | null;
+  const simFile = formData.get('sim') as File | null;
+  
+  if (ktpFile && ktpFile.size > 0) {
+    const ktpExt = ktpFile.name.split('.').pop();
+    const fileName = `${id_pelanggan}/${Date.now()}_ktp_walkin.${ktpExt}`;
+    await supabase.storage.from('dokumen-identitas').upload(fileName, ktpFile);
+    ktpUrl = fileName;
+  }
+  if (simFile && simFile.size > 0) {
+    const simExt = simFile.name.split('.').pop();
+    const fileName = `${id_pelanggan}/${Date.now()}_sim_walkin.${simExt}`;
+    await supabase.storage.from('dokumen-identitas').upload(fileName, simFile);
+    simUrl = fileName;
+  }
+
+  const { data: pesanan, error: errP } = await supabase.from('pemesanan').insert({
+    id_user: id_pelanggan,
+    id_kendaraan,
+    tanggal_sewa: tgl_sewa,
+    tanggal_kembali: tgl_kembali,
+    rute_perjalanan: rute,
+    ktp_url: ktpUrl,
+    sim_url: simUrl,
+    status_pemesanan: 'dibayar',
+    status_verifikasi: ktpUrl ? 'menunggu' : 'valid',
+  }).select('id_pemesanan').single();
+
+  if (errP) return { error: errP.message };
+
+  const total_harga = hitungJumlahHari(tgl_sewa, tgl_kembali) * mobil.harga_sewa;
+
+  const { error: errT } = await supabase.from('transaksi').insert({
+    id_user: staf.id_user,
+    id_kendaraan,
+    id_pemesanan: pesanan.id_pemesanan,
+    tanggal_sewa: tgl_sewa,
+    tanggal_kembali: tgl_kembali,
+    total_harga,
+    metode_pembayaran: metode_bayar,
+    status_pembayaran: 'settlement',
+    status: 'berjalan',
+  });
+
+  if (errT) return { error: errT.message };
+
+  revalidatePath('/staf');
+  revalidatePath('/staf/serah-terima');
+  return { success: true, id_pemesanan: pesanan.id_pemesanan };
+}
+
+// 4. Proses Serah Terima (Read List)
+export async function ambilDaftarSerahTerima() {
+  await wajibRole(['staf']);
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from('pemesanan')
+    .select('*, kendaraan(*), users(*)')
+    .eq('status_pemesanan', 'dibayar')
+    .order('tanggal_sewa', { ascending: true });
+  return data || [];
+}
+
+// 5. Proses Serah Terima (Read Detail & Signed URL)
+export async function ambilDetailSerahTerima(id_pemesanan: string) {
+  await wajibRole(['staf']);
+  const supabase = createAdminClient();
+  
+  const { data: pesanan, error } = await supabase
+    .from('pemesanan')
+    .select('*, kendaraan(*), users(*), transaksi(*)')
+    .eq('id_pemesanan', id_pemesanan)
+    .single();
+
+  if (error) {
+    console.error('Gagal mengambil detail serah terima:', error);
+    return null;
+  }
+  if (!pesanan) return null;
+
+  let ktpSigned = null, simSigned = null;
+  if (pesanan.ktp_url) {
+    const { data } = await supabase.storage.from('dokumen-identitas').createSignedUrl(pesanan.ktp_url, 3600);
+    ktpSigned = data?.signedUrl || null;
+  }
+  if (pesanan.sim_url) {
+    const { data } = await supabase.storage.from('dokumen-identitas').createSignedUrl(pesanan.sim_url, 3600);
+    simSigned = data?.signedUrl || null;
+  }
+
+  return { ...pesanan, ktp_signed_url: ktpSigned, sim_signed_url: simSigned };
+}
+
+// 6. Validasi Dokumen
+export async function ubahStatusVerifikasi(id_pemesanan: string, status_verifikasi: 'valid' | 'ditolak') {
+  await wajibRole(['staf']);
+  const supabase = createAdminClient();
+  const { error } = await supabase.from('pemesanan').update({ status_verifikasi }).eq('id_pemesanan', id_pemesanan);
+  if (error) return { error: error.message };
+  revalidatePath(`/staf/serah-terima/${id_pemesanan}`);
+  return { success: true };
+}
+
+// 7. Serahkan Kendaraan (Aksi Inti)
+export async function prosesSerahkanKendaraan(id_pemesanan: string) {
+  const staf = await wajibRole(['staf']);
+  const supabase = createAdminClient();
+
+  const { data: pesanan } = await supabase.from('pemesanan').select('*, transaksi(*)').eq('id_pemesanan', id_pemesanan).single();
+  if (!pesanan) return { error: 'Pesanan tidak ditemukan' };
+  
+  const trx = Array.isArray(pesanan.transaksi) ? pesanan.transaksi[0] : pesanan.transaksi;
+  if (!trx || trx.status_pembayaran !== 'settlement') return { error: 'Pembayaran belum lunas (settlement).' };
+  if (pesanan.status_verifikasi !== 'valid') return { error: 'Dokumen belum divalidasi (Valid).' };
+
+  await supabase.from('pemesanan').update({ status_pemesanan: 'diambil' }).eq('id_pemesanan', id_pemesanan);
+  await supabase.from('kendaraan').update({ status: 'disewa' }).eq('id_kendaraan', pesanan.id_kendaraan);
+  await supabase.from('transaksi').update({ 
+    id_user: staf.id_user, 
+    status: 'berjalan' 
+  }).eq('id_transaksi', trx.id_transaksi);
+
+  revalidatePath('/staf/serah-terima');
+  revalidatePath('/staf');
+  return { success: true };
+}
+
+// 8. Pengembalian List
+export async function ambilDaftarPengembalian() {
+  await wajibRole(['staf']);
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from('transaksi')
+    .select('*, pemesanan(*, users(nama)), kendaraan(nama_kendaraan)')
+    .eq('status', 'berjalan')
+    .order('tanggal_kembali', { ascending: true });
+  return data || [];
 }
 ```
 
@@ -3882,6 +4120,128 @@ function HeroCarCardIllustration({ fallbackIllustration, className }: { fallback
 }
 ```
 
+### FILE: src\app\staf\ketersediaan\KetersediaanClient.tsx
+```tsx
+'use client';
+
+import { useState } from 'react';
+import { formatTanggal } from '@/lib/formatters';
+import { Search, Calendar } from 'lucide-react';
+
+export default function KetersediaanClient({ kendaraan, pemesanan }: { kendaraan: any[], pemesanan: any[] }) {
+  const today = new Date().toISOString().split('T')[0];
+  const [tglMulai, setTglMulai] = useState(today);
+  const [tglSelesai, setTglSelesai] = useState(today);
+
+  // Filter logika: cari yang TIDAK ada di array pemesanan dengan tanggal overlap
+  const daftarTersedia = kendaraan.filter(k => {
+    if (k.status !== 'tersedia') return false;
+    const isBooked = pemesanan.some(p => {
+      if (p.id_kendaraan !== k.id_kendaraan) return false;
+      const start = new Date(tglMulai).getTime();
+      const end = new Date(tglSelesai).getTime();
+      const bStart = new Date(p.tanggal_sewa).getTime();
+      const bEnd = new Date(p.tanggal_kembali).getTime();
+      return start <= bEnd && end >= bStart; // overlapping logic
+    });
+    return !isBooked;
+  });
+
+  const daftarTerpakai = kendaraan.filter(k => !daftarTersedia.includes(k));
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <div className="flex flex-col sm:flex-row gap-4 items-end">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Mulai Tanggal</label>
+            <input type="date" value={tglMulai} onChange={(e) => setTglMulai(e.target.value)} className="border p-2.5 rounded-lg focus:ring-blue-500 outline-none" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Sampai Tanggal</label>
+            <input type="date" value={tglSelesai} onChange={(e) => setTglSelesai(e.target.value)} className="border p-2.5 rounded-lg focus:ring-blue-500 outline-none" />
+          </div>
+          <div className="pb-1 text-sm text-gray-500 flex items-center">
+            <Calendar size={18} className="mr-1.5" /> Filter Otomatis
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* List Tersedia */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-green-50 p-4 border-b border-green-100">
+            <h3 className="font-bold text-green-800">Tersedia ({daftarTersedia.length})</h3>
+          </div>
+          <div className="divide-y max-h-96 overflow-y-auto">
+            {daftarTersedia.map(k => (
+              <div key={k.id_kendaraan} className="p-4 flex justify-between items-center">
+                <div>
+                  <p className="font-semibold text-gray-900">{k.nama_kendaraan}</p>
+                  <p className="text-sm text-gray-500">{k.plat_nomor}</p>
+                </div>
+                <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-bold">KOSONG</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* List Terpakai */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-red-50 p-4 border-b border-red-100">
+            <h3 className="font-bold text-red-800">Terpakai / Sedang Disewa ({daftarTerpakai.length})</h3>
+          </div>
+          <div className="divide-y max-h-96 overflow-y-auto">
+            {daftarTerpakai.map(k => {
+              // Cari detail penyewa
+              const bookedBy = pemesanan.filter(p => p.id_kendaraan === k.id_kendaraan && (
+                new Date(tglMulai).getTime() <= new Date(p.tanggal_kembali).getTime() && 
+                new Date(tglSelesai).getTime() >= new Date(p.tanggal_sewa).getTime()
+              ));
+              return (
+                <div key={k.id_kendaraan} className="p-4">
+                  <p className="font-semibold text-gray-900">{k.nama_kendaraan} <span className="text-gray-400 font-normal text-sm">({k.plat_nomor})</span></p>
+                  {bookedBy.length > 0 ? bookedBy.map((b, i) => (
+                    <div key={i} className="mt-2 text-xs bg-gray-50 p-2 rounded border">
+                      <span className="font-medium text-gray-700">{b.users?.nama}</span> <br/>
+                      {formatTanggal(b.tanggal_sewa).split(',')[0]} - {formatTanggal(b.tanggal_kembali).split(',')[0]}
+                    </div>
+                  )) : (
+                    <div className="mt-2 text-xs bg-gray-50 p-2 rounded border text-gray-500">Status Master: Disewa</div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+### FILE: src\app\staf\ketersediaan\page.tsx
+```tsx
+import { ambilKetersediaan } from '@/app/actions/staf';
+import KetersediaanClient from './KetersediaanClient';
+
+export const dynamic = 'force-dynamic';
+
+export default async function KetersediaanPage() {
+  const data = await ambilKetersediaan();
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Pengecekan Ketersediaan</h1>
+        <p className="text-gray-500 text-sm mt-1">Cek status ketersediaan armada pada rentang tanggal tertentu.</p>
+      </div>
+      <KetersediaanClient kendaraan={data.kendaraan} pemesanan={data.pemesanan} />
+    </div>
+  );
+}
+```
+
 ### FILE: src\app\staf\layout.tsx
 ```tsx
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -3900,11 +4260,555 @@ export default async function StafLayout({ children }: { children: React.ReactNo
 
 ### FILE: src\app\staf\page.tsx
 ```tsx
-export default function DaftarBookingPage() {
+import Link from 'next/link';
+import { ambilJadwalHariIni } from '@/app/actions/staf';
+import { formatTanggal } from '@/lib/formatters';
+import { CalendarClock, ArrowRight, AlertTriangle } from 'lucide-react';
+
+export const dynamic = 'force-dynamic';
+
+export default async function DashboardStafPage() {
+  const data = await ambilJadwalHariIni();
+  const today = new Date().toISOString().split('T')[0];
+
+  const jmlPengambilan = data.pengambilan.length;
+  const jmlPengembalian = data.pengembalian.length;
+  const jmlTerlambat = data.pengembalian.filter((p: any) => p.tanggal_kembali < today).length;
+
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Daftar Booking Aktif Hari Ini</h1>
-      <p className="text-gray-500">Menampilkan daftar pelanggan yang akan mengambil atau mengembalikan mobil hari ini.</p>
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4">
+        <div className="p-3 bg-blue-100 text-blue-600 rounded-xl"><CalendarClock size={28} /></div>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard Staf</h1>
+          <p className="text-gray-500 text-sm">Ringkasan aktivitas pengambilan dan pengembalian hari ini.</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <p className="text-gray-500 text-sm font-medium">Jadwal Pengambilan Hari Ini</p>
+          <p className="text-3xl font-bold text-gray-900 mt-2">{jmlPengambilan}</p>
+        </div>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <p className="text-gray-500 text-sm font-medium">Jadwal Pengembalian Hari Ini</p>
+          <p className="text-3xl font-bold text-gray-900 mt-2">{jmlPengembalian}</p>
+        </div>
+        <div className="bg-red-50 p-6 rounded-xl shadow-sm border border-red-100">
+          <p className="text-red-600 text-sm font-medium flex items-center"><AlertTriangle size={16} className="mr-1" /> Terlambat Kembali</p>
+          <p className="text-3xl font-bold text-red-700 mt-2">{jmlTerlambat}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Kolom Pengambilan */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="p-4 border-b bg-gray-50 font-bold text-gray-900">Pengambilan (Serah Terima)</div>
+          <div className="divide-y">
+            {data.pengambilan.length === 0 ? (
+              <div className="p-6 text-center text-gray-500 text-sm">Tidak ada jadwal pengambilan.</div>
+            ) : (
+              data.pengambilan.map((p: any) => (
+                <div key={p.id_pemesanan} className="p-4 flex justify-between items-center hover:bg-gray-50">
+                  <div>
+                    <p className="font-semibold text-gray-900">{p.users?.nama}</p>
+                    <p className="text-sm text-gray-500">{p.kendaraan?.nama_kendaraan} • {formatTanggal(p.tanggal_sewa).split(',')[0]}</p>
+                  </div>
+                  <Link href={`/staf/serah-terima/${p.id_pemesanan}`} className="text-blue-600 p-2 hover:bg-blue-50 rounded-lg">
+                    <ArrowRight size={20} />
+                  </Link>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Kolom Pengembalian */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="p-4 border-b bg-gray-50 font-bold text-gray-900">Pengembalian</div>
+          <div className="divide-y">
+            {data.pengembalian.length === 0 ? (
+              <div className="p-6 text-center text-gray-500 text-sm">Tidak ada jadwal pengembalian.</div>
+            ) : (
+              data.pengembalian.map((p: any) => {
+                const isLate = p.tanggal_kembali < today;
+                return (
+                  <div key={p.id_pemesanan} className={`p-4 flex justify-between items-center ${isLate ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-gray-50'}`}>
+                    <div>
+                      <p className="font-semibold text-gray-900">{p.users?.nama}</p>
+                      <p className={`text-sm ${isLate ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                        {p.kendaraan?.nama_kendaraan} • {formatTanggal(p.tanggal_kembali).split(',')[0]}
+                        {isLate && " (Terlambat)"}
+                      </p>
+                    </div>
+                    <Link href={`/staf/pengembalian/${p.transaksi[0]?.id_transaksi}`} className="text-blue-600 p-2 hover:bg-blue-50 rounded-lg">
+                      <ArrowRight size={20} />
+                    </Link>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+### FILE: src\app\staf\pengembalian\[id_transaksi]\page.tsx
+```tsx
+```
+
+### FILE: src\app\staf\pengembalian\page.tsx
+```tsx
+interface PageProps {
+  params: Promise<{ id_transaksi: string }>;
+}
+
+export default async function Page({ params }: PageProps) {
+  const { id_transaksi } = await params;
+
+  return (
+    <div className="bg-white p-12 text-center rounded-xl border border-dashed border-gray-300">
+      <h2 className="text-xl font-bold text-gray-900 mb-2">Halaman Detail Pengembalian Sementara</h2>
+      <p className="text-gray-500 mb-4">Fitur denda keterlambatan dan kerusakan akan dikerjakan pada Tahap 12.</p>
+      <div className="inline-block bg-gray-100 text-gray-600 px-3 py-1 rounded-md text-sm font-mono">
+        ID Transaksi: {id_transaksi}
+      </div>
+    </div>
+  );
+}
+```
+
+### FILE: src\app\staf\serah-terima\[id_pemesanan]\page.tsx
+```tsx
+import { notFound } from 'next/navigation';
+import { ambilDetailSerahTerima } from '@/app/actions/staf';
+import SerahTerimaClient from './SerahTerimaClient';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+
+export const dynamic = 'force-dynamic';
+
+type PageProps = {
+  params: Promise<{ id_pemesanan: string }>;
+};
+
+export default async function DetailSerahTerimaPage({ params }: PageProps) {
+  const resolvedParams = await params;
+  const id_pemesanan = resolvedParams.id_pemesanan;
+
+  const data = await ambilDetailSerahTerima(id_pemesanan);
+  if (!data) return notFound();
+
+  return (
+    <div className="max-w-4xl space-y-6">
+      <Link href="/staf/serah-terima" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 mb-2">
+        <ArrowLeft size={16} className="mr-1" /> Kembali ke Daftar Serah Terima
+      </Link>
+      <h1 className="text-2xl font-bold text-gray-900 border-b pb-4">Proses Serah Terima & Validasi</h1>
+      
+      <SerahTerimaClient pesanan={data} />
+    </div>
+  );
+}
+```
+
+### FILE: src\app\staf\serah-terima\[id_pemesanan]\SerahTerimaClient.tsx
+```tsx
+'use client';
+
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { formatTanggal } from '@/lib/formatters';
+import { ubahStatusVerifikasi, prosesSerahkanKendaraan } from '@/app/actions/staf';
+import { CheckCircle, XCircle, FileText, KeyRound, Printer, AlertCircle } from 'lucide-react';
+
+export default function SerahTerimaClient({ pesanan }: { pesanan: any }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  const trx = Array.isArray(pesanan?.transaksi) ? pesanan.transaksi[0] : pesanan?.transaksi;
+  const isSettlement = trx?.status_pembayaran === 'settlement';
+  const isValid = pesanan?.status_verifikasi === 'valid';
+
+  const handleVerifikasi = (status: 'valid' | 'ditolak') => {
+    setError(null);
+    startTransition(async () => {
+      const res = await ubahStatusVerifikasi(pesanan.id_pemesanan, status);
+      if (res.error) setError(res.error);
+      else router.refresh();
+    });
+  };
+
+  const handleSerahkan = () => {
+    setError(null);
+
+    // 1. Cek Verifikasi Pembayaran
+    if (!isSettlement) {
+      setError('Penyerahan ditolak: Pembayaran belum lunas (settlement).');
+      return;
+    }
+
+    // 2. Cek Verifikasi Dokumen
+    if (!isValid) {
+      setError('Penyerahan ditolak: Dokumen identitas (KTP/SIM) belum divalidasi (Valid).');
+      return;
+    }
+
+    if (!confirm('Tandai mobil diserahkan ke pelanggan dan transaksi mulai berjalan?')) return;
+
+    startTransition(async () => {
+      const res = await prosesSerahkanKendaraan(pesanan.id_pemesanan);
+      if (res.error) setError(res.error);
+      else {
+        alert('Kendaraan berhasil diserahkan!');
+        router.push('/staf');
+      }
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Box Notifikasi Error / Peringatan */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-sm font-medium flex items-center">
+          <AlertCircle size={18} className="mr-2 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-xl border shadow-sm">
+          <h3 className="font-bold mb-4 border-b pb-2">Informasi Pemesanan</h3>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span>Pelanggan</span>
+              <span className="font-semibold">{pesanan?.users?.nama || '-'} ({pesanan?.users?.no_hp || '-'})</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Kendaraan</span>
+              <span className="font-semibold">{pesanan?.kendaraan?.nama_kendaraan || '-'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Tgl Sewa</span>
+              <span className="font-semibold">{pesanan?.tanggal_sewa ? formatTanggal(pesanan.tanggal_sewa).split(',')[0] : '-'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Tgl Kembali</span>
+              <span className="font-semibold">{pesanan?.tanggal_kembali ? formatTanggal(pesanan.tanggal_kembali).split(',')[0] : '-'}</span>
+            </div>
+            <div className="flex justify-between mt-2 pt-2 border-t">
+              <span>Status Pembayaran</span>
+              <span className={`font-bold ${isSettlement ? 'text-green-600' : 'text-red-600'}`}>
+                {isSettlement ? 'LUNAS (Settlement)' : (trx?.status_pembayaran?.toUpperCase() || 'BELUM ADA')}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl border shadow-sm flex flex-col">
+          <h3 className="font-bold mb-4 border-b pb-2 flex items-center"><FileText size={18} className="mr-2"/> Validasi Dokumen</h3>
+          
+          <div className="flex space-x-4 mb-4">
+            {pesanan?.ktp_signed_url ? (
+              <a href={pesanan.ktp_signed_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-sm font-medium">Cek KTP</a>
+            ) : (
+              <span className="text-gray-400 text-sm">File KTP Tidak Ada</span>
+            )}
+            {pesanan?.sim_signed_url ? (
+              <a href={pesanan.sim_signed_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-sm font-medium">Cek SIM</a>
+            ) : (
+              <span className="text-gray-400 text-sm">File SIM Tidak Ada</span>
+            )}
+          </div>
+
+          <div className="mt-auto pt-4 flex gap-2">
+            <button onClick={() => handleVerifikasi('valid')} disabled={isPending || isValid} className="flex-1 bg-green-100 hover:bg-green-200 text-green-700 font-bold py-2 rounded-lg flex justify-center items-center disabled:opacity-50">
+              <CheckCircle size={18} className="mr-1"/> Valid
+            </button>
+            <button onClick={() => handleVerifikasi('ditolak')} disabled={isPending || pesanan?.status_verifikasi === 'ditolak'} className="flex-1 bg-red-100 hover:bg-red-200 text-red-700 font-bold py-2 rounded-lg flex justify-center items-center disabled:opacity-50">
+              <XCircle size={18} className="mr-1"/> Tolak
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-gray-50 p-6 rounded-xl border flex flex-col sm:flex-row justify-end gap-3">
+        <button disabled className="px-6 py-3 bg-white text-gray-500 border rounded-xl flex items-center justify-center font-medium opacity-50 cursor-not-allowed">
+          <Printer size={18} className="mr-2"/> Cetak Surat Perjanjian
+        </button>
+        <button 
+          onClick={handleSerahkan}
+          disabled={isPending}
+          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center justify-center disabled:opacity-50 shadow-md transition"
+        >
+          <KeyRound size={18} className="mr-2"/> Serahkan Kendaraan
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+
+### FILE: src\app\staf\serah-terima\page.tsx
+```tsx
+import Link from 'next/link';
+import { ambilDaftarSerahTerima } from '@/app/actions/staf';
+import { formatTanggal } from '@/lib/formatters';
+import { KeyRound, ArrowRight } from 'lucide-react';
+
+export const dynamic = 'force-dynamic';
+
+export default async function SerahTerimaPage() {
+  const data = await ambilDaftarSerahTerima();
+
+  return (
+    <div>
+      <div className="mb-6 flex items-center space-x-3">
+        <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><KeyRound size={24} /></div>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Daftar Serah Terima Kendaraan</h1>
+          <p className="text-gray-500 text-sm mt-1">Daftar pesanan lunas yang siap diserahkan kepada pelanggan.</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-gray-50 border-b">
+            <tr>
+              <th className="px-6 py-4">ID Booking</th>
+              <th className="px-6 py-4">Pelanggan</th>
+              <th className="px-6 py-4">Kendaraan</th>
+              <th className="px-6 py-4">Tanggal Pengambilan</th>
+              <th className="px-6 py-4">Status Dokumen</th>
+              <th className="px-6 py-4 text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {data.length === 0 ? (
+              <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">Tidak ada jadwal serah terima.</td></tr>
+            ) : (
+              data.map((p: any) => (
+                <tr key={p.id_pemesanan} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 font-mono text-gray-600">{p.id_pemesanan.split('-')[0].toUpperCase()}</td>
+                  <td className="px-6 py-4 font-semibold">{p.users?.nama}</td>
+                  <td className="px-6 py-4">{p.kendaraan?.nama_kendaraan}</td>
+                  <td className="px-6 py-4">{formatTanggal(p.tanggal_sewa).split(',')[0]}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${p.status_verifikasi === 'valid' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {p.status_verifikasi?.toUpperCase()}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <Link href={`/staf/serah-terima/${p.id_pemesanan}`} className="inline-flex items-center text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 font-medium">
+                      Proses <ArrowRight size={16} className="ml-1" />
+                    </Link>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+```
+
+### FILE: src\app\staf\walk-in\page.tsx
+```tsx
+import { ambilKetersediaan } from '@/app/actions/staf';
+import WalkInClient from './WalkInClient';
+
+export const dynamic = 'force-dynamic';
+
+export default async function WalkInPage() {
+  const data = await ambilKetersediaan();
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Transaksi Walk-in</h1>
+        <p className="text-gray-500 text-sm mt-1">Pembuatan pesanan langsung di tempat (offline) oleh staf.</p>
+      </div>
+      <WalkInClient kendaraan={data.kendaraan} pemesanan={data.pemesanan} />
+    </div>
+  );
+}
+```
+
+### FILE: src\app\staf\walk-in\WalkInClient.tsx
+```tsx
+'use client';
+
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { hitungJumlahHari, formatRupiah } from '@/lib/formatters';
+import { prosesWalkIn } from '@/app/actions/staf';
+import { CheckCircle, AlertTriangle } from 'lucide-react';
+
+export default function WalkInClient({ kendaraan, pemesanan }: { kendaraan: any[], pemesanan: any[] }) {
+  const router = useRouter();
+  const [step, setStep] = useState(1);
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  // Ambil tanggal hari ini untuk pembatas input min & default nilai
+  const today = new Date().toISOString().split('T')[0];
+
+  // Form States (tanggal_sewa otomatis terisi hari ini)
+  const [formData, setFormData] = useState({
+    nama: '', email: '', no_hp: '', alamat: '', 
+    id_kendaraan: '', tanggal_sewa: today, tanggal_kembali: '', rute_perjalanan: '',
+    metode_pembayaran: 'tunai'
+  });
+  
+  const [fileKtp, setFileKtp] = useState<File | null>(null);
+  const [fileSim, setFileSim] = useState<File | null>(null);
+
+  const mobilPilihan = kendaraan.find(k => k.id_kendaraan === formData.id_kendaraan);
+  const jmlHari = (formData.tanggal_sewa && formData.tanggal_kembali) ? hitungJumlahHari(formData.tanggal_sewa, formData.tanggal_kembali) : 0;
+  const total = mobilPilihan ? mobilPilihan.harga_sewa * jmlHari : 0;
+
+  const cekBentrok = () => {
+    if (!formData.id_kendaraan || !formData.tanggal_sewa || !formData.tanggal_kembali) return false;
+    const start = new Date(formData.tanggal_sewa).getTime();
+    const end = new Date(formData.tanggal_kembali).getTime();
+    return pemesanan.some(p => {
+      if (p.id_kendaraan !== formData.id_kendaraan) return false;
+      const bStart = new Date(p.tanggal_sewa).getTime();
+      const bEnd = new Date(p.tanggal_kembali).getTime();
+      return start <= bEnd && end >= bStart;
+    });
+  };
+
+  const handleNext = () => {
+    if (step === 2 && cekBentrok()) {
+      setError("Kendaraan sudah dibooking pada tanggal tersebut!");
+      return;
+    }
+    setError(null);
+    setStep(s => s + 1);
+  };
+
+  const handleSubmit = async () => {
+    setError(null);
+    const data = new FormData();
+    Object.entries(formData).forEach(([k, v]) => data.append(k, v));
+    if (fileKtp) data.append('ktp', fileKtp);
+    if (fileSim) data.append('sim', fileSim);
+
+    startTransition(async () => {
+      const res = await prosesWalkIn(data);
+      if (res.error) setError(res.error);
+      else {
+        alert("Transaksi Walk-in berhasil diproses!");
+        router.push(`/staf/serah-terima/${res.id_pemesanan}`);
+      }
+    });
+  };
+
+  return (
+    <div className="max-w-3xl bg-white p-6 md:p-8 rounded-xl shadow-sm border border-gray-200">
+      {error && <div className="mb-4 bg-red-50 text-red-600 p-3 rounded flex"><AlertTriangle className="mr-2" size={20}/> {error}</div>}
+
+      <div className="flex mb-8">
+        {[1, 2, 3].map(i => (
+          <div key={i} className={`flex-1 text-center font-bold text-sm pb-2 border-b-4 ${step >= i ? 'border-blue-600 text-blue-600' : 'border-gray-200 text-gray-400'}`}>
+            Langkah {i}
+          </div>
+        ))}
+      </div>
+
+      {step === 1 && (
+        <div className="space-y-4">
+          <h3 className="font-bold text-lg text-gray-900 mb-2">Data Pelanggan Baru / Lama</h3>
+          <div><label className="block text-sm mb-1">Nama Lengkap</label><input type="text" value={formData.nama} onChange={e => setFormData({...formData, nama: e.target.value})} className="w-full border p-2 rounded" /></div>
+          <div><label className="block text-sm mb-1">Email (Kosongkan jika ingin dibuat otomatis)</label><input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full border p-2 rounded" placeholder="Otomatis dihasilkan jika kosong" /></div>
+          <div><label className="block text-sm mb-1">Nomor HP</label><input type="tel" value={formData.no_hp} onChange={e => setFormData({...formData, no_hp: e.target.value})} className="w-full border p-2 rounded" /></div>
+          <div><label className="block text-sm mb-1">Alamat</label><textarea value={formData.alamat} onChange={e => setFormData({...formData, alamat: e.target.value})} className="w-full border p-2 rounded"></textarea></div>
+          <button onClick={handleNext} disabled={!formData.nama || !formData.no_hp} className="w-full bg-blue-600 text-white py-2 rounded font-bold mt-4 disabled:opacity-50">Lanjut</button>
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="space-y-4">
+          <h3 className="font-bold text-lg text-gray-900 mb-2">Pilih Kendaraan & Waktu</h3>
+          <div>
+            <label className="block text-sm mb-1">Kendaraan Tersedia</label>
+            <select value={formData.id_kendaraan} onChange={e => setFormData({...formData, id_kendaraan: e.target.value})} className="w-full border p-2 rounded bg-white">
+              <option value="">Pilih Kendaraan</option>
+              {kendaraan.filter(k => k.status === 'tersedia').map(k => (
+                <option key={k.id_kendaraan} value={k.id_kendaraan}>{k.nama_kendaraan} - {k.plat_nomor}</option>
+              ))}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm mb-1">Tgl Sewa</label>
+              <input 
+                type="date" 
+                min={today}
+                value={formData.tanggal_sewa} 
+                onChange={e => setFormData({...formData, tanggal_sewa: e.target.value})} 
+                className="w-full border p-2 rounded" 
+              />
+            </div>
+            <div>
+              <label className="block text-sm mb-1">Tgl Kembali</label>
+              <input 
+                type="date" 
+                min={formData.tanggal_sewa || today}
+                value={formData.tanggal_kembali} 
+                onChange={e => setFormData({...formData, tanggal_kembali: e.target.value})} 
+                className="w-full border p-2 rounded" 
+              />
+            </div>
+          </div>
+          <div><label className="block text-sm mb-1">Rute</label><input type="text" value={formData.rute_perjalanan} onChange={e => setFormData({...formData, rute_perjalanan: e.target.value})} className="w-full border p-2 rounded" /></div>
+          
+          <div className="grid grid-cols-2 gap-4 border-t pt-4">
+            <div><label className="block text-sm mb-1">Upload KTP (Opsional)</label><input type="file" accept="image/*,.pdf" onChange={e => setFileKtp(e.target.files?.[0] || null)} className="w-full text-sm" /></div>
+            <div><label className="block text-sm mb-1">Upload SIM (Opsional)</label><input type="file" accept="image/*,.pdf" onChange={e => setFileSim(e.target.files?.[0] || null)} className="w-full text-sm" /></div>
+          </div>
+
+          <div className="flex justify-between mt-4">
+            <button onClick={() => setStep(1)} className="px-4 py-2 bg-gray-200 rounded">Kembali</button>
+            <button onClick={handleNext} disabled={!formData.id_kendaraan || !formData.tanggal_sewa || !formData.tanggal_kembali} className="px-4 py-2 bg-blue-600 text-white rounded font-bold disabled:opacity-50">Lanjut</button>
+          </div>
+        </div>
+      )}
+
+      {step === 3 && (
+        <div className="space-y-4">
+          <h3 className="font-bold text-lg text-gray-900 mb-2 border-b pb-2">Konfirmasi & Pembayaran</h3>
+          
+          <div className="bg-gray-50 p-4 rounded text-sm space-y-2">
+            <div className="flex justify-between"><span>Pelanggan</span><span className="font-bold">{formData.nama}</span></div>
+            <div className="flex justify-between"><span>Kendaraan</span><span className="font-bold">{mobilPilihan?.nama_kendaraan}</span></div>
+            <div className="flex justify-between"><span>Durasi</span><span className="font-bold">{jmlHari} Hari</span></div>
+            <div className="flex justify-between text-base pt-2 border-t font-extrabold text-blue-600"><span>Total Tagihan</span><span>{formatRupiah(total)}</span></div>
+          </div>
+
+          <div>
+            <label className="block text-sm mb-2 font-medium">Metode Pembayaran</label>
+            <select value={formData.metode_pembayaran} onChange={e => setFormData({...formData, metode_pembayaran: e.target.value})} className="w-full border p-2 rounded bg-white">
+              <option value="tunai">Tunai / Cash</option>
+              <option value="transfer_bank">Transfer Bank / EDC</option>
+            </select>
+          </div>
+
+          <div className="flex justify-between mt-6 pt-4 border-t">
+            <button onClick={() => setStep(2)} className="px-4 py-2 bg-gray-200 rounded">Kembali</button>
+            <button onClick={handleSubmit} disabled={isPending} className="flex items-center px-6 py-2 bg-blue-600 text-white rounded font-bold shadow disabled:opacity-50">
+              {isPending ? 'Memproses...' : <><CheckCircle className="mr-2" size={18}/> Konfirmasi & Selesai</>}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -4337,7 +5241,6 @@ import { Menu, X, LogOut, Users, LayoutDashboard, Car, FileText, Activity, Calen
 import { logoutAction } from '@/app/actions/auth';
 import { NAMA_PERUSAHAAN } from '@/lib/config';
 
-// Definisi menu berdasarkan Master Brief
 const superAdminMenus = [
   { label: 'Manajemen Pengguna Aplikasi', href: '/super-admin', icon: Users },
 ];
@@ -4353,8 +5256,8 @@ const stafMenus = [
   { label: 'Daftar Booking Aktif Hari Ini', href: '/staf', icon: CalendarClock },
   { label: 'Pengecekan Ketersediaan', href: '/staf/ketersediaan', icon: ClipboardCheck },
   { label: 'Transaksi Walk-in', href: '/staf/walk-in', icon: Store },
-  { label: 'Proses Serah Terima', href: '/staf/serah-terima/placeholder', icon: KeyRound },
-  { label: 'Proses Pengembalian', href: '/staf/pengembalian/placeholder', icon: Undo2 },
+  { label: 'Proses Serah Terima', href: '/staf/serah-terima', icon: KeyRound },
+  { label: 'Proses Pengembalian', href: '/staf/pengembalian', icon: Undo2 },
   { label: 'Cetak Dokumen', href: '/staf/cetak/placeholder', icon: Printer },
 ];
 
@@ -4366,7 +5269,6 @@ export default function DashboardLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
-  // Menentukan menu yang aktif berdasarkan role
   let menuItems: any[] = [];
   if (role === 'super_admin') menuItems = superAdminMenus;
   else if (role === 'admin') menuItems = adminMenus;
@@ -4374,7 +5276,6 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
-      {/* Sidebar Mobile Overlay */}
       {isMobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
@@ -4382,7 +5283,6 @@ export default function DashboardLayout({
         />
       )}
 
-      {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 bg-white w-64 shadow-lg transform transition-transform duration-200 ease-in-out z-30 lg:translate-x-0 lg:static lg:inset-auto flex flex-col ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex items-center justify-center h-16 border-b border-gray-200 px-4">
           <span className="font-bold text-blue-600 text-lg text-center leading-tight">
@@ -4419,9 +5319,7 @@ export default function DashboardLayout({
         </div>
       </aside>
 
-      {/* Konten Utama */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header Atas */}
         <header className="bg-white h-16 shadow-sm flex items-center justify-between px-4 lg:px-8 border-b border-gray-200">
           <button 
             onClick={() => setIsMobileMenuOpen(true)}
@@ -4429,7 +5327,7 @@ export default function DashboardLayout({
           >
             <Menu size={24} />
           </button>
-          <div className="hidden lg:block" /> {/* Spacer */}
+          <div className="hidden lg:block" />
           
           <div className="flex items-center space-x-3 text-sm">
             <span className="text-gray-500 bg-gray-100 px-2 py-1 rounded-md capitalize font-medium">
@@ -4439,7 +5337,6 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        {/* Halaman */}
         <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
           {children}
         </main>
